@@ -93,7 +93,25 @@ local function SlashHandler(msg)
     ShortyRCD:Print("Debug: " .. tostring(ShortyRCDDB.debug))
     return
   end
-  ShortyRCD:Print("Usage: /srcd  (opens options) | /srcd debug")
+
+  -- Dev helper: simulate receiving a cast from addon comms.
+  -- Usage: /srcd inject <spellID>
+  local cmd, rest = strsplit(" ", msg, 2)
+  if cmd == "inject" then
+    local spellID = tonumber(rest)
+    if not spellID then
+      ShortyRCD:Print("Inject usage: /srcd inject <spellID>")
+      return
+    end
+    if ShortyRCD.Comms and ShortyRCD.Comms.DevInjectCast then
+      ShortyRCD.Comms:DevInjectCast(spellID)
+      return
+    end
+    ShortyRCD:Print("Comms module not ready; cannot inject.")
+    return
+  end
+
+  ShortyRCD:Print("Usage: /srcd  (options) | /srcd debug | /srcd inject <spellID>")
 end
 
 -- ---------- Init ----------
@@ -113,11 +131,70 @@ function ShortyRCD:OnLogin()
   self:Print("Loaded v" .. self.VERSION .. ". Type /srcd")
 end
 
--- ---------- Event frame ----------
-local f = CreateFrame("Frame")
-f:RegisterEvent("PLAYER_LOGIN")
-f:SetScript("OnEvent", function(_, event, ...)
-  if event == "PLAYER_LOGIN" then
-    ShortyRCD:OnLogin()
+-- ---------- Spell detection (self only) ----------
+function ShortyRCD:OnSpellcastSucceeded(unit, castGUID, spellID)
+  if unit ~= "player" then return end
+  if type(spellID) ~= "number" then return end
+
+  -- Only act on spells we track.
+  local entry = self.GetSpellEntry and self:GetSpellEntry(spellID) or nil
+  if not entry then return end
+
+  -- Channeled spells are announced on UNIT_SPELLCAST_CHANNEL_START.
+  if entry.ch == true then return end
+
+  local _, classToken = UnitClass("player")
+  if not self:IsTracked(classToken, spellID) then return end
+
+  if self.Comms and self.Comms.BroadcastCast then
+    self.Comms:BroadcastCast(spellID)
+    self:Debug(("TX C|%d (%s)"):format(spellID, entry.name or "?"))
   end
-end)
+end
+
+function ShortyRCD:OnSpellcastChannelStart(unit, castGUID, spellID)
+  if unit ~= "player" then return end
+  if type(spellID) ~= "number" then return end
+
+  -- Only act on spells we track.
+  local entry = self.GetSpellEntry and self:GetSpellEntry(spellID) or nil
+  if not entry then return end
+
+  -- Only channeled spells are announced here.
+  if entry.ch ~= true then return end
+
+  local _, classToken = UnitClass("player")
+  if not self:IsTracked(classToken, spellID) then return end
+
+  if self.Comms and self.Comms.BroadcastCast then
+    self.Comms:BroadcastCast(spellID)
+    self:Debug(("TX C|%d (%s) [channel]"):format(spellID, entry.name or "?"))
+  end
+end
+
+function ShortyRCD:RegisterEvents()
+  if not EventRegistry then
+    self:Print("EventRegistry unavailable; events disabled")
+    return
+  end
+
+  EventRegistry:RegisterFrameEvent("PLAYER_LOGIN")
+  EventRegistry:RegisterCallback("PLAYER_LOGIN", function()
+    ShortyRCD:OnLogin()
+  end, self)
+
+  -- Self casts only (architecture: each client detects their own casts).
+  EventRegistry:RegisterFrameEvent("UNIT_SPELLCAST_SUCCEEDED")
+  EventRegistry:RegisterCallback("UNIT_SPELLCAST_SUCCEEDED", function(_, ...)
+    ShortyRCD:OnSpellcastSucceeded(...)
+  end, self)
+
+  -- Channeled spells announce at channel start so AC bars are meaningful.
+  EventRegistry:RegisterFrameEvent("UNIT_SPELLCAST_CHANNEL_START")
+  EventRegistry:RegisterCallback("UNIT_SPELLCAST_CHANNEL_START", function(_, ...)
+    ShortyRCD:OnSpellcastChannelStart(...)
+  end, self)
+end
+
+-- ---------- Bootstrap ----------
+ShortyRCD:RegisterEvents()

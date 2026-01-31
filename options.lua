@@ -2,6 +2,10 @@
 ShortyRCD = ShortyRCD or {}
 ShortyRCD.Options = ShortyRCD.Options or {}
 
+-- Font cache (computed once)
+ShortyRCD.Options._fontPath = nil
+
+
 -- -------------------------------------------------
 -- Helpers
 -- -------------------------------------------------
@@ -11,21 +15,27 @@ ShortyRCD.Options = ShortyRCD.Options or {}
 -- -------------------------------------------------
 
 function ShortyRCD.Options:GetFontPath()
-  -- Try custom font
+  -- Return cached result if we already tested it
+  if self._fontPath then
+    return self._fontPath
+  end
+
   local customPath = "Fonts\\Expressway.ttf"
 
-  -- Attempt to create a temporary FontString to test it
+  -- Test if WoW can load it (no direct file-exists API, so we probe SetFont)
   local testFrame = CreateFrame("Frame")
   local fs = testFrame:CreateFontString(nil, "OVERLAY")
   local ok = fs:SetFont(customPath, 12)
 
   if ok then
-    return customPath
+    self._fontPath = customPath
+  else
+    self._fontPath = STANDARD_TEXT_FONT
   end
 
-  -- Fallback
-  return STANDARD_TEXT_FONT
+  return self._fontPath
 end
+
 
 
 local CLASS_ICON_TEX = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
@@ -265,6 +275,7 @@ end
 
 function ShortyRCD.Options:RebuildTrackingList()
   if not self.scrollChild then return end
+  self._fontPath = nil
 
   self:UpdateScrollChildWidth()
   NukeChildren(self.scrollChild)
