@@ -6,15 +6,12 @@ local Tracker = ShortyRCD.Tracker
 
 local function ShortName(nameWithRealm)
   if type(nameWithRealm) ~= "string" then return nameWithRealm end
-  -- Prefer Ambiguate if available (handles Name-Realm)
-  if Ambiguate then
-    return Ambiguate(nameWithRealm, "short")
-  end
+  if Ambiguate then return Ambiguate(nameWithRealm, "short") end
   return (nameWithRealm:gsub("%-.*$", ""))
 end
 
 function Tracker:Init()
-  -- state[name][spellID] = { startedAt=, cd=, ac=, iconID=, name=, type=, roe= }
+  -- state[name][spellID] = { startedAt=, cd=, ac=, iconID=, spellName=, type=, roe= }
   self.state = self.state or {}
 end
 
@@ -41,7 +38,7 @@ end
 function Tracker:OnEncounterEnd()
   if not self.state then return end
   for sender, bySpell in pairs(self.state) do
-    for spellID, s in pairs(bySpell) do
+    for spellID, _ in pairs(bySpell) do
       local entry = ShortyRCD.GetSpellEntry and ShortyRCD:GetSpellEntry(tonumber(spellID)) or nil
       if entry and entry.roe == true then
         bySpell[spellID] = nil
@@ -80,17 +77,40 @@ local function BuildRow(sender, spellID, st, now)
   }
 end
 
+-- Return a single row for a specific sender+spellID, or nil if not on cooldown anymore.
+function Tracker:GetState(sender, spellID)
+  if not self.state then return nil end
+  sender = ShortName(sender)
+  spellID = tonumber(spellID)
+  if not sender or not spellID then return nil end
+
+  local bySpell = self.state[sender]
+  if not bySpell then return nil end
+
+  local st = bySpell[spellID]
+  if not st then return nil end
+
+  local now = GetTime()
+  local row = BuildRow(sender, spellID, st, now)
+
+  -- Auto-expire once fully ready again
+  if row.cooldownRemaining <= 0 then
+    bySpell[spellID] = nil
+    if next(bySpell) == nil then self.state[sender] = nil end
+    return nil
+  end
+
+  return row
+end
+
 function Tracker:GetRows()
   local rows = {}
   local now = GetTime()
-
   if not self.state then return rows end
 
   for sender, bySpell in pairs(self.state) do
     for spellID, st in pairs(bySpell) do
       local row = BuildRow(sender, spellID, st, now)
-
-      -- Auto-expire once fully ready again
       if row.cooldownRemaining <= 0 then
         bySpell[spellID] = nil
       else
