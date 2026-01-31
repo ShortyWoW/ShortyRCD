@@ -6,7 +6,32 @@ ShortyRCD.Options = ShortyRCD.Options or {}
 -- Helpers
 -- -------------------------------------------------
 
+-- -------------------------------------------------
+-- Font Handling
+-- -------------------------------------------------
+
+function ShortyRCD.Options:GetFontPath()
+  -- Try custom font
+  local customPath = "Fonts\\Expressway.ttf"
+
+  -- Attempt to create a temporary FontString to test it
+  local testFrame = CreateFrame("Frame")
+  local fs = testFrame:CreateFontString(nil, "OVERLAY")
+  local ok = fs:SetFont(customPath, 12)
+
+  if ok then
+    return customPath
+  end
+
+  -- Fallback
+  return STANDARD_TEXT_FONT
+end
+
+
 local CLASS_ICON_TEX = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
+
+-- Spell row indentation (px)
+local SPELL_INDENT = 10
 
 local function ClassColorText(classToken, text)
   local c = (RAID_CLASS_COLORS and RAID_CLASS_COLORS[classToken]) or nil
@@ -22,6 +47,21 @@ local function PrettyType(t)
   if t == "HEALING"   then return "Healing" end
   if t == "UTILITY"   then return "Utility" end
   return "Other"
+end
+
+-- Subtle type colors (not neon)
+local function TypeColorCode(t)
+  t = tostring(t or ""):upper()
+  if t == "HEALING" then   return "FF7BD88F" end -- soft green
+  if t == "UTILITY" then   return "FF7FB7FF" end -- soft blue
+  if t == "DEFENSIVE" then return "FFFFD36A" end -- soft gold
+  return "FFCCCCCC"
+end
+
+local function ColorizeType(t)
+  local pretty = PrettyType(t)
+  local hex = TypeColorCode(t)
+  return string.format("|c%s%s|r", hex, pretty)
 end
 
 local function FormatCooldownSeconds(sec)
@@ -58,22 +98,31 @@ end
 local function CreateSpellIcon(parent, iconID)
   local t = parent:CreateTexture(nil, "ARTWORK")
   t:SetSize(18, 18)
-  t:SetPoint("LEFT", parent, "LEFT", 24, 0) -- after checkbox
+  -- AFTER checkbox, plus indent for hierarchy
+  t:SetPoint("LEFT", parent, "LEFT", 24 + SPELL_INDENT, 0)
   if iconID then t:SetTexture(iconID) end
   t:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   return t
 end
 
 local function CreateLeftLabel(parent, text)
-  local fs = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-  fs:SetPoint("LEFT", parent, "LEFT", 46, 0) -- after checkbox+icon
+  local fs = parent:CreateFontString(nil, "ARTWORK")
+  local fontPath = ShortyRCD.Options:GetFontPath()
+  fs:SetFont(fontPath, 13)
+  fs:SetTextColor(1, 1, 1)
+
+  fs:SetPoint("LEFT", parent, "LEFT", 46 + SPELL_INDENT, 0)
   fs:SetJustifyH("LEFT")
   fs:SetText(text or "")
   return fs
 end
 
 local function CreateRightTag(parent, text)
-  local fs = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+  local fs = parent:CreateFontString(nil, "ARTWORK")
+  local fontPath = ShortyRCD.Options:GetFontPath()
+  fs:SetFont(fontPath, 12)
+  fs:SetTextColor(0.85, 0.85, 0.85)
+
   fs:SetPoint("RIGHT", parent, "RIGHT", -10, 0)
   fs:SetJustifyH("RIGHT")
   fs:SetText(text or "")
@@ -85,7 +134,7 @@ local function CreateCheckboxRow(parent)
   row:SetHeight(22)
 
   local cb = CreateFrame("CheckButton", nil, row, "InterfaceOptionsCheckButtonTemplate")
-  cb:SetPoint("LEFT", 0, 0)
+  cb:SetPoint("LEFT", SPELL_INDENT, 0) -- indent the checkbox for hierarchy
   cb.Text:SetText("")
   row.checkbox = cb
 
@@ -102,11 +151,9 @@ local function NukeChildren(frame)
 end
 
 local function GetClassOrder()
-  -- Prefer the library’s explicit order, else derive from ClassDisplay keys
   if ShortyRCD.ClassOrder and #ShortyRCD.ClassOrder > 0 then
     return ShortyRCD.ClassOrder
   end
-
   local order = {}
   if ShortyRCD.ClassDisplay then
     for k in pairs(ShortyRCD.ClassDisplay) do
@@ -189,7 +236,6 @@ function ShortyRCD.Options:CreatePanel()
   scrollFrame:SetPoint("TOPLEFT", trackingHeader, "BOTTOMLEFT", 0, -10)
   scrollFrame:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", -30, 12)
 
-  -- scrollChild (IMPORTANT: set width dynamically)
   local scrollChild = CreateFrame("Frame", nil, scrollFrame)
   scrollChild:SetSize(1, 1)
   scrollFrame:SetScrollChild(scrollChild)
@@ -206,7 +252,6 @@ function ShortyRCD.Options:CreatePanel()
   -- Keep width correct if resized
   scrollFrame:SetScript("OnSizeChanged", function()
     ShortyRCD.Options:UpdateScrollChildWidth()
-    -- Don’t rebuild every resize; just fix width
   end)
 end
 
@@ -214,31 +259,30 @@ function ShortyRCD.Options:UpdateScrollChildWidth()
   if not self.scrollFrame or not self.scrollChild then return end
   local w = self.scrollFrame:GetWidth()
   if not w or w <= 0 then return end
-
-  -- scrollbar takes space; give a little padding
+  -- scrollbar/padding
   self.scrollChild:SetWidth(math.max(1, w - 28))
 end
 
 function ShortyRCD.Options:RebuildTrackingList()
   if not self.scrollChild then return end
 
-  -- Fix width before building rows
   self:UpdateScrollChildWidth()
-
-  -- Clear previous content
   NukeChildren(self.scrollChild)
 
-  local y = -4
   local child = self.scrollChild
-  local width = child:GetWidth()
+  local y = -4
+
+  -- Store checkbox refs by class so Enable/Disable All updates UI
+  local classCheckboxes = {}
 
   local classOrder = GetClassOrder()
   local classLib = ShortyRCD.ClassLib or {}
 
   local function AddClassBlock(classToken)
     local className = (ShortyRCD.ClassDisplay and ShortyRCD.ClassDisplay[classToken]) or classToken
+    local spells = classLib[classToken] or {}
 
-    -- Header row (full width)
+    -- Class header row
     local header = CreateFrame("Frame", nil, child)
     header:SetHeight(20)
     header:SetPoint("TOPLEFT", child, "TOPLEFT", 0, y)
@@ -249,14 +293,33 @@ function ShortyRCD.Options:RebuildTrackingList()
     icon:SetPoint("LEFT", 0, 0)
     SetClassIcon(icon, classToken)
 
-    local headerText = header:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    local headerText = header:CreateFontString(nil, "ARTWORK")
+    local fontPath = ShortyRCD.Options:GetFontPath()
+    headerText:SetFont(fontPath, 14)
+    headerText:SetTextColor(1, 0.82, 0)
+
     headerText:SetPoint("LEFT", icon, "RIGHT", 6, 0)
     headerText:SetText(ClassColorText(classToken, className))
 
+    -- Enable/Disable All buttons (right side)
+    local disableBtn = CreateFrame("Button", nil, header, "UIPanelButtonTemplate")
+    disableBtn:SetSize(90, 18)
+    disableBtn:SetPoint("RIGHT", header, "RIGHT", 0, 0)
+    disableBtn:SetText("Disable All")
+
+    local enableBtn = CreateFrame("Button", nil, header, "UIPanelButtonTemplate")
+    enableBtn:SetSize(80, 18)
+    enableBtn:SetPoint("RIGHT", disableBtn, "LEFT", -6, 0)
+    enableBtn:SetText("Enable All")
+
     y = y - 22
 
-    local spells = classLib[classToken] or {}
+    classCheckboxes[classToken] = classCheckboxes[classToken] or {}
+
     if #spells == 0 then
+      enableBtn:Disable()
+      disableBtn:Disable()
+
       local none = child:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
       none:SetPoint("TOPLEFT", child, "TOPLEFT", 24, y)
       none:SetText("(no raid cooldowns)")
@@ -264,6 +327,24 @@ function ShortyRCD.Options:RebuildTrackingList()
       y = y - 8
       return
     end
+
+    enableBtn:SetScript("OnClick", function()
+      for _, s in ipairs(spells) do
+        ShortyRCD:SetTracked(classToken, s.spellID, true)
+      end
+      for _, cb in ipairs(classCheckboxes[classToken]) do
+        cb:SetChecked(true)
+      end
+    end)
+
+    disableBtn:SetScript("OnClick", function()
+      for _, s in ipairs(spells) do
+        ShortyRCD:SetTracked(classToken, s.spellID, false)
+      end
+      for _, cb in ipairs(classCheckboxes[classToken]) do
+        cb:SetChecked(false)
+      end
+    end)
 
     for _, s in ipairs(spells) do
       local row = CreateCheckboxRow(child)
@@ -277,15 +358,20 @@ function ShortyRCD.Options:RebuildTrackingList()
         ShortyRCD:SetTracked(classToken, s.spellID, self:GetChecked())
       end)
 
+      table.insert(classCheckboxes[classToken], row.checkbox)
+
       row.icon  = CreateSpellIcon(row, s.iconID)
       row.label = CreateLeftLabel(row, s.name or "Unknown Spell")
 
-      local typeText = PrettyType(s.type)
+      -- Colored type + cooldown (from class library source of truth)
+      local typeColored = ColorizeType(s.type)
       local cdText = FormatCooldownSeconds(s.cd)
-      local tag = typeText
+
+      local tag = typeColored
       if cdText ~= "" then
-        tag = string.format("%s \226\128\162 %s", typeText, cdText) -- " • "
+        tag = string.format("%s \226\128\162 %s", typeColored, cdText) -- " • "
       end
+
       row.tag = CreateRightTag(row, tag)
 
       y = y - 24
@@ -298,7 +384,6 @@ function ShortyRCD.Options:RebuildTrackingList()
     AddClassBlock(classToken)
   end
 
-  -- Set total scroll height so scrolling works
   child:SetHeight(math.abs(y) + 40)
 end
 
