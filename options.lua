@@ -276,10 +276,50 @@ function ShortyRCD.Options:CreatePanel()
   ApplySpellNameMode(ShortyRCDDB.ui.spellNames)
 
 
+  -- Grouping mode: By Spell | By Class
+  if not ShortyRCDDB.ui.grouping then ShortyRCDDB.ui.grouping = "spell" end
+
+  local grpLabel = p:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+  grpLabel:SetPoint("TOPLEFT", fullCB, "BOTTOMLEFT", 2, -18)
+  grpLabel:SetText("Grouping:")
+
+  local bySpellCB = CreateFrame("CheckButton", nil, p, "InterfaceOptionsCheckButtonTemplate")
+  bySpellCB.Text:SetText("By Spell")
+  bySpellCB:SetPoint("TOPLEFT", grpLabel, "BOTTOMLEFT", -2, -6)
+
+  local byClassCB = CreateFrame("CheckButton", nil, p, "InterfaceOptionsCheckButtonTemplate")
+  byClassCB.Text:SetText("By Class")
+  byClassCB:SetPoint("LEFT", bySpellCB.Text, "RIGHT", 26, 0)
+
+  local function ApplyGroupingMode(mode)
+    ShortyRCDDB.ui.grouping = mode
+    bySpellCB:SetChecked(mode == "spell")
+    byClassCB:SetChecked(mode == "class")
+
+    if ShortyRCD and ShortyRCD.UI and ShortyRCD.UI.RefreshRoster then
+      ShortyRCD.UI:RefreshRoster()
+    elseif ShortyRCD and ShortyRCD.UI and ShortyRCD.UI.UpdateBoard then
+      ShortyRCD.UI:UpdateBoard()
+    end
+  end
+
+  bySpellCB:SetScript("OnClick", function() ApplyGroupingMode("spell") end)
+  byClassCB:SetScript("OnClick", function() ApplyGroupingMode("class") end)
+
+  ApplyGroupingMode(ShortyRCDDB.ui.grouping)
+
+
+
   -- Tracking header
   local trackingHeader = p:CreateFontString(nil, "ARTWORK", "GameFontNormal")
   trackingHeader:SetPoint("TOPLEFT", fullCB, "BOTTOMLEFT", 2, -18)
   trackingHeader:SetText("Tracking")
+
+  -- Re-anchor Tracking header below Grouping controls to avoid overlap.
+  if bySpellCB and trackingHeader then
+    trackingHeader:ClearAllPoints()
+    trackingHeader:SetPoint("TOPLEFT", bySpellCB, "BOTTOMLEFT", 2, -18)
+  end
 
   -- Scroll container
   local scrollFrame = CreateFrame("ScrollFrame", nil, p, "UIPanelScrollFrameTemplate")

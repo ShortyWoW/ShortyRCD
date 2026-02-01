@@ -66,12 +66,12 @@ local CATEGORY_LABEL = {
 
 -- Layout constants (compact, raid-friendly)
 local ROW_H   = 18
-local GAP_Y   = 3
+local GAP_Y   = 6
 local GAP_X   = 14
 local COL_W   = 320
 local PAD_L   = 10
 local PAD_R   = 10
-local PAD_B   = 10
+local PAD_B   = 8
 
 local function GetMaxScreenHeight()
   if UIParent and UIParent.GetHeight then
@@ -389,6 +389,20 @@ end
 function UI:BuildDisplayLines()
   wipe(self.displayLines)
 
+  -- Display grouping: spell-first (default) or class-first (Option A: Category -> Class -> Spell -> Players)
+  local grouping = (ShortyRCDDB and ShortyRCDDB.ui and ShortyRCDDB.ui.grouping) or "spell"
+  if grouping == "class" and self.BuildDisplayLinesByClass then
+    self:BuildDisplayLinesByClass()
+    return
+  end
+
+  -- Default to raid-leader optimized grouping (spell -> players).
+  -- Original flat layout is kept below as fallback.
+  if self.BuildDisplayLinesGrouped then
+    self:BuildDisplayLinesGrouped()
+    return
+  end
+
   -- Group items by category
   local byCat = { DEFENSIVE = {}, HEALING = {}, UTILITY = {} }
   for _, it in ipairs(self.rosterItems or {}) do
@@ -422,6 +436,202 @@ function UI:BuildDisplayLines()
   end
 end
 
+
+-- Raid-leader optimized layout: group by spell within each category.
+function UI:BuildDisplayLinesGrouped()
+  wipe(self.displayLines)
+
+  -- category -> spellID -> bundle
+  local byCatSpell = { DEFENSIVE = {}, HEALING = {}, UTILITY = {} }
+
+  for _, it in ipairs(self.rosterItems or {}) do
+    local cat = it.type or "UTILITY"
+    if not byCatSpell[cat] then byCatSpell[cat] = {} end
+    local sid = it.spellID
+    if sid then
+      local b = byCatSpell[cat][sid]
+      if not b then
+        b = { spellID = sid, spellName = it.spellName, abbr = it.abbr, iconID = it.iconID, items = {} }
+        byCatSpell[cat][sid] = b
+      end
+      table.insert(b.items, it)
+    end
+  end
+
+  local function SpellDisplayText(bundle)
+    local mode = (ShortyRCDDB and ShortyRCDDB.ui and ShortyRCDDB.ui.spellNames) or "full"
+    if mode == "short" then
+      return bundle.abbr or bundle.spellName or ("Spell " .. tostring(bundle.spellID))
+    elseif mode == "none" then
+       -- Group headers must still identify the spell; "none" only applies to player rows
+      return bundle.abbr or bundle.spellName or ("Spell " .. tostring(bundle.spellID))
+    else
+      return bundle.spellName or ("Spell " .. tostring(bundle.spellID))
+    end
+  end
+
+  for _, catKey in ipairs(CATEGORY_ORDER) do
+    local bucket = byCatSpell[catKey]
+    if bucket then
+      local spells = {}
+      for _, b in pairs(bucket) do table.insert(spells, b) end
+
+      table.sort(spells, function(a, b)
+        return (SpellDisplayText(a) or "") < (SpellDisplayText(b) or "")
+      end)
+
+      if #spells > 0 then
+        table.insert(self.displayLines, { kind = "header", text = CATEGORY_LABEL[catKey] or catKey, cat = catKey })
+
+        for _, b in ipairs(spells) do
+          table.insert(self.displayLines, {
+            kind = "spell",
+            cat = catKey,
+            spellID = b.spellID,
+            iconID = b.iconID,
+            text = SpellDisplayText(b),
+            count = #b.items,
+          })
+
+          table.sort(b.items, function(x, y) return (x.sender or "") < (y.sender or "") end)
+
+          for _, it in ipairs(b.items) do
+            it.onlySender = true
+            table.insert(self.displayLines, { kind = "item", item = it, cat = catKey, indent = 1 })
+          end
+
+          table.insert(self.displayLines, { kind = "spacerSmall" })
+        end
+        table.insert(self.displayLines, { kind = "spacer" })
+      end
+    end
+  end
+
+  -- Trim trailing spacers
+  while #self.displayLines > 0 and (self.displayLines[#self.displayLines].kind == "spacer" or self.displayLines[#self.displayLines].kind == "spacerSmall") do
+    table.remove(self.displayLines, #self.displayLines)
+  end
+end
+
+
+-- -------------------------------------------------
+-- Grouping Mode: Category -> Class -> Spell -> Players
+-- -------------------------------------------------
+function UI:BuildDisplayLinesByClass()
+  wipe(self.displayLines)
+
+  -- category -> classToken -> spellID -> bundle
+  local byCatClass = { DEFENSIVE = {}, HEALING = {}, UTILITY = {} }
+
+  for _, it in ipairs(self.rosterItems or {}) do
+    local cat = it.type or "UTILITY"
+    if not byCatClass[cat] then byCatClass[cat] = {} end
+    local ct = it.classToken or (self.classByName and self.classByName[it.sender]) or "UNKNOWN"
+    local classBucket = byCatClass[cat][ct]
+    if not classBucket then
+      classBucket = {}
+      byCatClass[cat][ct] = classBucket
+    end
+
+    local sid = it.spellID
+    if sid then
+      local b = classBucket[sid]
+      if not b then
+        b = { spellID = sid, spellName = it.spellName, abbr = it.abbr, iconID = it.iconID, items = {}, classToken = ct }
+        classBucket[sid] = b
+      end
+      table.insert(b.items, it)
+    end
+  end
+
+  local function SpellDisplayText(bundle)
+    local mode = (ShortyRCDDB and ShortyRCDDB.ui and ShortyRCDDB.ui.spellNames) or "full"
+    if mode == "short" then
+      return bundle.abbr or bundle.spellName or ("Spell " .. tostring(bundle.spellID))
+    elseif mode == "none" then
+      -- Group headers must still identify the spell; "none" only applies to player rows
+      return bundle.abbr or bundle.spellName or ("Spell " .. tostring(bundle.spellID))
+    else
+      return bundle.spellName or ("Spell " .. tostring(bundle.spellID))
+    end
+  end
+
+  local function ClassDisplayText(classToken)
+    -- Prefer WoW's localized class names if available
+    local name = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[classToken]) or (LOCALIZED_CLASS_NAMES_FEMALE and LOCALIZED_CLASS_NAMES_FEMALE[classToken]) or classToken
+    return name or tostring(classToken or "UNKNOWN")
+  end
+
+  for _, catKey in ipairs(CATEGORY_ORDER) do
+    local catBucket = byCatClass[catKey]
+    if catBucket then
+      -- collect classes present in this category
+      local classes = {}
+      for classToken, _ in pairs(catBucket) do
+        -- Only include if the class has at least one spell bundle
+        local hasAny = false
+        for _sid, _b in pairs(catBucket[classToken]) do hasAny = true; break end
+        if hasAny then
+          table.insert(classes, classToken)
+        end
+      end
+
+      table.sort(classes, function(a, b)
+        return (ClassDisplayText(a) or "") < (ClassDisplayText(b) or "")
+      end)
+
+      local anyLines = false
+      for _, classToken in ipairs(classes) do
+        local spellMap = catBucket[classToken]
+        local spells = {}
+        for _, b in pairs(spellMap) do table.insert(spells, b) end
+
+        table.sort(spells, function(a, b)
+          return (SpellDisplayText(a) or "") < (SpellDisplayText(b) or "")
+        end)
+
+        if #spells > 0 then
+          if not anyLines then
+            table.insert(self.displayLines, { kind = "header", text = CATEGORY_LABEL[catKey] or catKey, cat = catKey })
+            anyLines = true
+          end
+
+          table.insert(self.displayLines, { kind = "class", cat = catKey, classToken = classToken, text = ClassDisplayText(classToken) })
+
+          for _, b in ipairs(spells) do
+            table.insert(self.displayLines, {
+              kind = "spell",
+              cat = catKey,
+              spellID = b.spellID,
+              iconID = b.iconID,
+              text = SpellDisplayText(b),
+              count = #b.items,
+            })
+
+            table.sort(b.items, function(x, y) return (x.sender or "") < (y.sender or "") end)
+            for _, it in ipairs(b.items) do
+              it.onlySender = true
+              table.insert(self.displayLines, { kind = "item", item = it, cat = catKey, indent = 1 })
+            end
+          end
+
+          -- space between classes (not between spells)
+          table.insert(self.displayLines, { kind = "spacerSmall" })
+        end
+      end
+
+      if anyLines then
+        table.insert(self.displayLines, { kind = "spacer" })
+      end
+    end
+  end
+
+  -- Trim trailing spacers
+  while #self.displayLines > 0 and (self.displayLines[#self.displayLines].kind == "spacer" or self.displayLines[#self.displayLines].kind == "spacerSmall") do
+    table.remove(self.displayLines, #self.displayLines)
+  end
+end
+
 -- Compute how many columns are needed so that each column height <= maxH.
 -- We flow line-by-line into columns (like text), repeating category headers when wrapping mid-category.
 function UI:ComputeFlowColumns(lines)
@@ -432,8 +642,13 @@ function UI:ComputeFlowColumns(lines)
   local usableH = math.max(200, maxH - topOverhead)
 
   local function LineHeight(line)
-    if line.kind == "header" then return ROW_H + 4 end
-    if line.kind == "spacer" then return 8 end
+    if line.kind == "header" then return ROW_H + 2 end
+    if line.kind == "class" then return ROW_H - 4 end
+    if line.kind == "class" then return ROW_H - 4 end
+    if line.kind == "class" then return ROW_H - 4 end
+    if line.kind == "spell" then return ROW_H - 4 end
+    if line.kind == "spacer" then return 4 end
+    if line.kind == "spacerSmall" then return 0 end
     return ROW_H
   end
 
@@ -513,8 +728,12 @@ function UI:UpdateBoard()
   -- but "no scrolling" means we prefer more columns rather than clipping.
   local maxUsed = 0
   local function LineHeight(line)
-    if line.kind == "header" then return ROW_H + 4 end
-    if line.kind == "spacer" then return 8 end
+    if line.kind == "header" then return ROW_H + 2 end
+    if line.kind == "class" then return ROW_H - 4 end
+    if line.kind == "class" then return ROW_H - 4 end
+    if line.kind == "spell" then return ROW_H - 4 end
+    if line.kind == "spacer" then return 4 end
+    if line.kind == "spacerSmall" then return 2 end
     return ROW_H
   end
   for _, colLines in ipairs(columns) do
@@ -557,6 +776,8 @@ function UI:UpdateBoard()
       r:SetPoint("TOPLEFT", self.list, "TOPLEFT", startX, -y)
       r:SetSize(colW - 20, ROW_H)
 
+      local indentPx = 0 -- default (spell headers should not indent)
+
       if line.kind == "header" then
         -- Header styling: no icon/bar, just text
         r.bg:Hide()
@@ -572,11 +793,82 @@ function UI:UpdateBoard()
         r.bar:Hide()
 
         r:Show()
-        y = y + (ROW_H + 4) + GAP_Y
+        y = y + (ROW_H + 2) + GAP_Y
+        rowIndex = rowIndex + 1
+      elseif line.kind == "class" then
+        -- Class sub-header: class name (colored)
+        local classToken = line.classToken
+        local classText = line.text or tostring(classToken or "")
+        local c = (RAID_CLASS_COLORS and classToken and RAID_CLASS_COLORS[classToken])
+        r.bg:Hide()
+        r.barBG:Hide()
+        r.bar:Hide()
+        r.timer:Hide()
+        r.label:Hide()
+        r.icon:Hide()
+        r.headerText:Show()
+        r.headerText:ClearAllPoints()
+        -- Indent class header slightly under category
+        r.headerText:SetPoint("LEFT", r, "LEFT", 8, 0)
+        if c then
+          local rr = math.floor((c.r or 1)*255 + 0.5)
+          local gg = math.floor((c.g or 1)*255 + 0.5)
+          local bb = math.floor((c.b or 1)*255 + 0.5)
+          r.headerText:SetText(string.format("|cff%02x%02x%02x%s|r", rr, gg, bb, classText))
+        else
+          r.headerText:SetText("|cffffffff" .. classText .. "|r")
+        end
+        r:Show()
+        y = y + (ROW_H - 4) + GAP_Y
+        rowIndex = rowIndex + 1
+      elseif line.kind == "spell" then
+        -- Spell sub-header: icon + name + count (no progress bar)
+        local iconID = line.iconID
+        local spellText = line.text or ""
+        local count = tonumber(line.count) or 0
+
+        r.bg:Hide()
+        r.barBG:Hide()
+        r.bar:Hide()
+        r.timer:Hide()
+        r.label:Hide()
+
+        r.icon:Show()
+        r.icon:ClearAllPoints()
+        r.icon:SetPoint("LEFT", r, "LEFT", 2 + indentPx, 0)
+        r.headerText:Show()
+        r.icon:ClearAllPoints()
+        r.icon:SetPoint("LEFT", r, "LEFT", 2, 0)
+
+        if iconID then
+          r.icon:SetTexture(iconID)
+        else
+          r.icon:SetTexture("Interface/Icons/INV_Misc_QuestionMark")
+        end
+
+        local catTint = "|cffb0bec5"
+        if line.cat == "HEALING" then catTint = "|cff66bb6a" end
+        if line.cat == "DEFENSIVE" then catTint = "|cff42a5f5" end
+        if line.cat == "UTILITY" then catTint = "|cffffca28" end
+
+        local label = ""
+        if spellText ~= "" then
+          label = spellText .. " "
+        end
+        label = label .. catTint .. "(" .. tostring(count) .. ")" .. "|r"
+
+        r.headerText:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
+        r.headerText:SetText("|cffcfd8dc" .. label .. "|r")
+
+        r:Show()
+        y = y + (ROW_H - 4) + GAP_Y
         rowIndex = rowIndex + 1
       elseif line.kind == "spacer" then
         r:Hide()
-        y = y + 8
+        y = y + 2
+      elseif line.kind == "spacerSmall" then
+        r:Hide()
+        y = y + 0
       else
         -- Item row
         local d = line.item
@@ -584,6 +876,8 @@ function UI:UpdateBoard()
         local cr, cg, cb = self:GetClassColorForSender(sender)
 
         r.headerText:Hide()
+
+        local indentPx = (line.indent == 1) and 14 or 0
         r.bg:Show()
         r.icon:Show()
         r.barBG:Show()
@@ -593,6 +887,8 @@ function UI:UpdateBoard()
 
         local senderHex = RGBToHex(cr, cg, cb)
         local senderText = ("|cff%s%s|r"):format(senderHex, sender or "?")
+        local onlySender = (d.onlySender == true)
+        local bullet = (line.indent == 1) and "|cff90a4ae> |r" or ""
 
         local mode = (ShortyRCDDB and ShortyRCDDB.ui and ShortyRCDDB.ui.spellNames) or "full"
         local spellText = ""
@@ -606,11 +902,15 @@ function UI:UpdateBoard()
           spellText = d.spellName or ("Spell " .. tostring(d.spellID))
         end
 
+        if onlySender then
+          spellText = ""
+        end
+
         local labelText
         if spellText ~= "" then
-          labelText = ("%s - %s"):format(senderText, spellText)
+          labelText = bullet .. ("%s - %s"):format(senderText, spellText)
         else
-          labelText = senderText
+          labelText = bullet .. senderText
         end
         r.label:SetText(labelText)
 
