@@ -123,6 +123,12 @@ function UI:RefreshRoster()
   wipe(self.classByName)
   wipe(self.rosterItems)
 
+  local playerShort = nil
+  do
+    local pf = UnitName("player")
+    if pf then playerShort = ShortName(pf) end
+  end
+
   local function AddUnit(unit)
     if not UnitExists(unit) then return end
     local full = UnitName(unit)
@@ -143,7 +149,24 @@ function UI:RefreshRoster()
           tracked = ShortyRCD:IsTracked(classToken, e.spellID)
         end
         if tracked then
-        table.insert(self.rosterItems, {
+          -- Capability filtering:
+          -- - For myself, only show spells I currently know (spec/talents).
+          -- - For others, if we have received a capabilities list, hide spells they don't report.
+          local allow = true
+          if playerShort and short == playerShort then
+            if IsPlayerSpell and IsPlayerSpell(e.spellID) then
+              allow = true
+            elseif IsSpellKnown and IsSpellKnown(e.spellID) then
+              allow = true
+            else
+              allow = false
+            end
+          elseif ShortyRCD.Tracker and ShortyRCD.Tracker.HasAnyCapabilities and ShortyRCD.Tracker:HasAnyCapabilities(short) then
+            allow = (ShortyRCD.Tracker.HasCapability and ShortyRCD.Tracker:HasCapability(short, e.spellID)) or false
+          end
+
+          if allow then
+            table.insert(self.rosterItems, {
           sender = short,
           classToken = classToken,
           spellID = e.spellID,
@@ -154,6 +177,7 @@ function UI:RefreshRoster()
           cd = tonumber(e.cd) or 0,
           ac = tonumber(e.ac) or 0,
         })
+          end
               end
       end
     end

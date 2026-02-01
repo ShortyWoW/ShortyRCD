@@ -96,6 +96,22 @@ function ShortyRCD:BroadcastMyCapabilities(reason)
 end
 
 
+function ShortyRCD:RequestCapabilities(reason)
+  if not (self.Comms and self.Comms.RequestCapabilities) then return end
+  if not IsInGroup or not IsInGroup() then return end
+
+  -- Throttle capability requests (e.g., multiple roster updates on login/reload).
+  self._lastCapsReqAt = self._lastCapsReqAt or 0
+  local now = GetTime and GetTime() or 0
+  if now - self._lastCapsReqAt < 2.0 then return end
+  self._lastCapsReqAt = now
+
+  self.Comms:RequestCapabilities()
+  self:Debug(("TX R| (%s)"):format(tostring(reason or "?")))
+end
+
+
+
 -- ---------- DB helpers ----------
 function ShortyRCD:InitDB()
   if type(ShortyRCDDB) ~= "table" then
@@ -309,6 +325,23 @@ function ShortyRCD:OnEncounterEnd(encounterID, encounterName, difficultyID, grou
 end
 
 
+
+function ShortyRCD:OnGroupRosterUpdate()
+  -- Always re-broadcast my current capability list.
+  self:BroadcastMyCapabilities("GROUP_ROSTER_UPDATE")
+
+  -- Newcomer behavior: if I just joined a group (or /reload while grouped),
+  -- request that everyone rebroadcast so my roster is immediately accurate.
+  local inGroup = IsInGroup and IsInGroup() or false
+  local wasInGroup = self._wasInGroup or false
+
+  if inGroup and not wasInGroup then
+    self:RequestCapabilities("JOINED_GROUP")
+  end
+
+  self._wasInGroup = inGroup
+end
+
 function ShortyRCD:RegisterEvents()
   if not EventRegistry then
     self:Print("EventRegistry unavailable; events disabled")
@@ -342,8 +375,36 @@ function ShortyRCD:RegisterEvents()
   -- Group changes: join/leave/convert party<->raid etc.
   EventRegistry:RegisterFrameEvent("GROUP_ROSTER_UPDATE")
   EventRegistry:RegisterCallback("GROUP_ROSTER_UPDATE", function()
-    ShortyRCD:BroadcastMyCapabilities("GROUP_ROSTER_UPDATE")
+    ShortyRCD:OnGroupRosterUpdate()
   end, self)
+  -- Zoning / instance transitions (dungeons/raids/world).
+  EventRegistry:RegisterFrameEvent("PLAYER_ENTERING_WORLD")
+  EventRegistry:RegisterCallback("PLAYER_ENTERING_WORLD", function()
+    ShortyRCD:BroadcastMyCapabilities("PLAYER_ENTERING_WORLD")
+  end, self)
+
+  EventRegistry:RegisterFrameEvent("ZONE_CHANGED_NEW_AREA")
+  EventRegistry:RegisterCallback("ZONE_CHANGED_NEW_AREA", function()
+    ShortyRCD:BroadcastMyCapabilities("ZONE_CHANGED_NEW_AREA")
+  end, self)
+
+  -- Talent system updates (Dragonflight+)
+  EventRegistry:RegisterFrameEvent("TRAIT_CONFIG_UPDATED")
+  EventRegistry:RegisterCallback("TRAIT_CONFIG_UPDATED", function()
+    ShortyRCD:BroadcastMyCapabilities("TRAIT_CONFIG_UPDATED")
+  end, self)
+
+  -- Legacy talent updates (harmless if never fires)
+  EventRegistry:RegisterFrameEvent("PLAYER_TALENT_UPDATE")
+  EventRegistry:RegisterCallback("PLAYER_TALENT_UPDATE", function()
+    ShortyRCD:BroadcastMyCapabilities("PLAYER_TALENT_UPDATE")
+  end, self)
+
+  EventRegistry:RegisterFrameEvent("ACTIVE_TALENT_GROUP_CHANGED")
+  EventRegistry:RegisterCallback("ACTIVE_TALENT_GROUP_CHANGED", function()
+    ShortyRCD:BroadcastMyCapabilities("ACTIVE_TALENT_GROUP_CHANGED")
+  end, self)
+
 
   -- Spec change (covers swapping between heal/dps and many talent swaps that change known spells).
   EventRegistry:RegisterFrameEvent("PLAYER_SPECIALIZATION_CHANGED")

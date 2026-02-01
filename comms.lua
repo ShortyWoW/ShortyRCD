@@ -144,17 +144,83 @@ function Comms:BroadcastCast(spellID, cdOverrideSec)
   self:Send(payload)
 end
 
+
+-- Broadcast capabilities list (what spells I can currently cast).
+-- spells: array of spellIDs (numbers) sorted or unsorted.
+function Comms:BroadcastCapabilities(spells)
+  if type(spells) ~= "table" then return end
+  if #spells == 0 then return end
+
+  -- Payload stays compact: "L|740,98008,108280"
+  local parts = {}
+  for i = 1, #spells do
+    local id = tonumber(spells[i])
+    if id then
+      parts[#parts+1] = tostring(id)
+    end
+  end
+  if #parts == 0 then return end
+  table.sort(parts)
+
+  local payload = "L|" .. table.concat(parts, ",")
+  ShortyRCD:Debug(("TX %s"):format(payload))
+  self:Send(payload)
+end
+
+
+-- Request that everyone rebroadcast their capability list (L|...).
+-- Sent by newcomers on join/reload so the roster converges quickly.
+function Comms:RequestCapabilities()
+  local payload = "R|"
+  ShortyRCD:Debug(("TX %s"):format(payload))
+  self:Send(payload)
+end
+
 function Comms:OnAddonMessage(prefix, msg, channel, sender)
   if prefix ~= self.PREFIX then return end
   if channel ~= "RAID" and channel ~= "INSTANCE_CHAT" and channel ~= "PARTY" then return end
 
-  local kind, spellIDStr, cdStr = strsplit("|", msg or "", 3)
+  local kind, a, b = strsplit("|", msg or "", 3)
+
+  -- Capability request: R|  (ask everyone to send L|...)
+  if kind == "R" then
+    ShortyRCD:Debug(("RX %s requested caps"):format(tostring(sender)))
+    if ShortyRCD.BroadcastMyCapabilities then
+      -- BroadcastMyCapabilities already throttles to avoid spam.
+      ShortyRCD:BroadcastMyCapabilities("CAPS_REQUEST")
+    end
+    return
+  end
+
+
+  -- Capability list: L|740,98008,108280
+  if kind == "L" then
+    local spellIDs = {}
+    if type(a) == "string" and a ~= "" then
+      for idStr in string.gmatch(a, "([^,]+)") do
+        local id = tonumber(idStr)
+        if id then
+          spellIDs[#spellIDs+1] = id
+        end
+      end
+    end
+
+    ShortyRCD:Debug(("RX %s caps %d spells"):format(tostring(sender), #spellIDs))
+
+    if ShortyRCD.Tracker and ShortyRCD.Tracker.OnRemoteCapabilities then
+      ShortyRCD.Tracker:OnRemoteCapabilities(sender, spellIDs)
+    end
+
+    return
+  end
+
+  -- Cast events: C|spellID|cdSec(optional)
   if kind ~= "C" then return end
 
-  local spellID = tonumber(spellIDStr)
+  local spellID = tonumber(a)
   if not spellID then return end
 
-  local cdSec = tonumber(cdStr)
+  local cdSec = tonumber(b)
   if cdSec and cdSec > 0 then
     cdSec = math.floor(cdSec + 0.5)
   else
@@ -163,7 +229,7 @@ function Comms:OnAddonMessage(prefix, msg, channel, sender)
 
   local entry = ShortyRCD.GetSpellEntry and ShortyRCD:GetSpellEntry(spellID) or nil
   if not entry then
-    ShortyRCD:Debug(("RX ignored unknown spellID %s from %s"):format(tostring(spellIDStr), tostring(sender)))
+    ShortyRCD:Debug(("RX ignored unknown spellID %s from %s"):format(tostring(a), tostring(sender)))
     return
   end
 
@@ -196,4 +262,4 @@ function Comms:DevInjectCast(spellID, senderOverride)
 
   -- Use RAID as a valid receive channel to exercise the real receive path.
   self:OnAddonMessage(self.PREFIX, "C|" .. tostring(spellID), "RAID", sender)
-end
+end 
