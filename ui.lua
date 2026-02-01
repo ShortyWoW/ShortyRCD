@@ -137,6 +137,11 @@ function UI:RefreshRoster()
 
     for _, e in ipairs(list) do
       if type(e) == "table" and type(e.spellID) == "number" then
+        local tracked = true
+        if ShortyRCD and ShortyRCD.IsTracked then
+          tracked = ShortyRCD:IsTracked(classToken, e.spellID)
+        end
+        if tracked then
         table.insert(self.rosterItems, {
           sender = short,
           classToken = classToken,
@@ -147,6 +152,7 @@ function UI:RefreshRoster()
           cd = tonumber(e.cd) or 0,
           ac = tonumber(e.ac) or 0,
         })
+              end
       end
     end
   end

@@ -71,7 +71,13 @@ end
 function ShortyRCD:SetTracked(classToken, spellID, isTracked)
   ShortyRCDDB.tracking[classToken] = ShortyRCDDB.tracking[classToken] or {}
   ShortyRCDDB.tracking[classToken][spellID] = (isTracked == true)
+
+  -- Live-update roster board without requiring /reload
+  if ShortyRCD.UI and ShortyRCD.UI.RefreshRoster then
+    ShortyRCD.UI:RefreshRoster()
+  end
 end
+
 
 -- ---------- Slash ----------
 local function OpenOptions()
@@ -94,18 +100,7 @@ local function SlashHandler(msg)
     return
   end
 
-  
-  if msg == "lock" then
-    ShortyRCDDB.locked = not ShortyRCDDB.locked
-    if ShortyRCD.UI and ShortyRCD.UI.SetLocked then
-      ShortyRCD.UI:SetLocked(ShortyRCDDB.locked)
-    elseif ShortyRCD.UI and ShortyRCD.UI.ApplyLockState then
-      ShortyRCD.UI:ApplyLockState()
-    end
-    ShortyRCD:Print("Lock: " .. tostring(ShortyRCDDB.locked))
-    return
-  end
--- Dev helper: simulate receiving a cast from addon comms.
+  -- Dev helper: simulate receiving a cast from addon comms.
   -- Usage: /srcd inject <spellID>
   local cmd, rest = strsplit(" ", msg, 2)
   if cmd == "inject" then
@@ -122,7 +117,7 @@ local function SlashHandler(msg)
     return
   end
 
-  ShortyRCD:Print("Usage: /srcd (options) | /srcd debug | /srcd lock | /srcd inject <spellID>")
+  ShortyRCD:Print("Usage: /srcd  (options) | /srcd debug | /srcd inject <spellID>")
 end
 
 -- ---------- Init ----------
