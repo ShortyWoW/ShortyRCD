@@ -45,6 +45,54 @@ function ShortyRCD:Debug(msg)
   if ShortyRCDDB and ShortyRCDDB.debug then
     self:Print("|cff999999" .. tostring(msg) .. "|r")
   end
+
+-- ---------- Capability broadcast (my currently available spells from ClassLib) ----------
+function ShortyRCD:GetMyCapabilities()
+  local spells = {}
+
+  local _, classToken = UnitClass("player")
+  if not classToken then return spells end
+
+  local list = self.ClassLib and self.ClassLib[classToken] or nil
+  if type(list) ~= "table" then return spells end
+
+  for _, e in ipairs(list) do
+    local spellID = tonumber(e.spellID)
+    if spellID and self:IsTracked(classToken, spellID) then
+      -- IsPlayerSpell includes talented spells (true only if currently known).
+      if IsPlayerSpell and IsPlayerSpell(spellID) then
+        spells[#spells+1] = spellID
+      elseif IsSpellKnown and IsSpellKnown(spellID) then
+        spells[#spells+1] = spellID
+      end
+    end
+  end
+
+  table.sort(spells)
+  return spells
+end
+
+function ShortyRCD:BroadcastMyCapabilities(reason)
+  if not (self.Comms and self.Comms.BroadcastCapabilities) then return end
+
+  -- Soft throttle to avoid spamming on rapid talent/spec updates.
+  self._lastCapsAt = self._lastCapsAt or 0
+  local now = GetTime and GetTime() or 0
+  if now - self._lastCapsAt < 1.0 and reason ~= "ENCOUNTER_END" then
+    return
+  end
+  self._lastCapsAt = now
+
+  local spells = self:GetMyCapabilities()
+  if #spells == 0 then
+    self:Debug("Caps TX skipped (none)")
+    return
+  end
+
+  self.Comms:BroadcastCapabilities(spells)
+  self:Debug(("TX L|%d spells (%s)"):format(#spells, tostring(reason or "?")))
+end
+
 end
 
 -- ---------- DB helpers ----------
@@ -100,18 +148,7 @@ local function SlashHandler(msg)
     return
   end
 
-  
-  if msg == "lock" then
-    ShortyRCDDB.locked = not ShortyRCDDB.locked
-    if ShortyRCD.UI and ShortyRCD.UI.SetLocked then
-      ShortyRCD.UI:SetLocked(ShortyRCDDB.locked)
-    elseif ShortyRCD.UI and ShortyRCD.UI.ApplyLockState then
-      ShortyRCD.UI:ApplyLockState()
-    end
-    ShortyRCD:Print("Lock: " .. tostring(ShortyRCDDB.locked))
-    return
-  end
--- Dev helper: simulate receiving a cast from addon comms.
+  -- Dev helper: simulate receiving a cast from addon comms.
   -- Usage: /srcd inject <spellID>
   local cmd, rest = strsplit(" ", msg, 2)
   if cmd == "inject" then
@@ -128,15 +165,12 @@ local function SlashHandler(msg)
     return
   end
 
-  ShortyRCD:Print("Usage: /srcd (options) | /srcd debug | /srcd lock | /srcd inject <spellID>")
+  ShortyRCD:Print("Usage: /srcd  (options) | /srcd debug | /srcd inject <spellID>")
 end
 
 -- ---------- Init ----------
 function ShortyRCD:OnLogin()
   self:InitDB()
-
-  ShortyRCDDB.ui = ShortyRCDDB.ui or {}
-  if not ShortyRCDDB.ui.spellNames then ShortyRCDDB.ui.spellNames = "full" end
 
   -- Initialize subsystems (each module attaches itself if loaded)
   if self.Tracker and self.Tracker.Init then self.Tracker:Init() end
@@ -147,6 +181,9 @@ function ShortyRCD:OnLogin()
   -- Slash command
   SLASH_SHORTYRCD1 = "/srcd"
   SlashCmdList["SHORTYRCD"] = SlashHandler
+
+  -- Announce my current available spells (talents/spec filtered)
+  self:BroadcastMyCapabilities("LOGIN")
 
   self:Print("Loaded v" .. self.VERSION .. ". Type /srcd")
 end
@@ -227,6 +264,21 @@ function ShortyRCD:RegisterEvents()
   EventRegistry:RegisterFrameEvent("ENCOUNTER_END")
   EventRegistry:RegisterCallback("ENCOUNTER_END", function(_, ...)
     ShortyRCD:OnEncounterEnd(...)
+  end, self)
+
+
+  -- Group changes: join/leave/convert party<->raid etc.
+  EventRegistry:RegisterFrameEvent("GROUP_ROSTER_UPDATE")
+  EventRegistry:RegisterCallback("GROUP_ROSTER_UPDATE", function()
+    ShortyRCD:BroadcastMyCapabilities("GROUP_ROSTER_UPDATE")
+  end, self)
+
+  -- Spec change (covers swapping between heal/dps and many talent swaps that change known spells).
+  EventRegistry:RegisterFrameEvent("PLAYER_SPECIALIZATION_CHANGED")
+  EventRegistry:RegisterCallback("PLAYER_SPECIALIZATION_CHANGED", function(_, unit)
+    if unit == "player" then
+      ShortyRCD:BroadcastMyCapabilities("PLAYER_SPECIALIZATION_CHANGED")
+    end
   end, self)
 
 end

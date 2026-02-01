@@ -1,0 +1,49 @@
+name: Build & Release (tagged)
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Safety checks: make sure addon folder exists and has a .toc
+      - name: Validate addon structure
+        run: |
+          set -e
+          test -d "ShortyRCD" || (echo "ERROR: Missing ShortyRCD/ folder at repo root." && exit 1)
+          ls -1 ShortyRCD/*.toc >/dev/null 2>&1 || (echo "ERROR: No .toc found in ShortyRCD/. WoW addons require a .toc." && exit 1)
+
+      # Create a zip that contains the folder ShortyRCD/ at the zip root
+      - name: Build addon zip (ShortyRCD only)
+        run: |
+          set -e
+          rm -f ShortyRCD.zip
+
+          # Zip ONLY the addon folder. This automatically excludes README, LICENSE, .github, etc.
+          zip -r ShortyRCD.zip ShortyRCD \
+            -x "**/.git/**" \
+            -x "**/.github/**" \
+            -x "**/.DS_Store" \
+            -x "**/Thumbs.db"
+
+          echo "Created:"
+          ls -lah ShortyRCD.zip
+
+      - name: Create GitHub Release and upload zip
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ShortyRCD.zip
+          generate_release_notes: true
+          body: |
+            Guild release build.
+            Not intended for general public use. No external support.

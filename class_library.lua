@@ -47,7 +47,7 @@ ShortyRCD.ClassLib = {
   },
 
   DRUID = {
-    { name = "Tranquility",               abbr = "Tranq", spellID = 740,    iconID = 136107, cd = 180, ac = 6,  ch = true, roe = true,  type = "HEALING"   },
+    { name = "Tranquility",               abbr = "Tranq", spellID = 740,    iconID = 136107, cd = 180, ac = 6,  ch = true, roe = true,  role = "Healer", type = "HEALING"   },
     { name = "Incarnation: Tree of Life", abbr = "Tree", spellID = 33891,  iconID = 236157, cd = 180, ac = 30, ch = false, roe = true, type = "HEALING"   },
     { name = "Ironbark",                  abbr = "Ironbark", spellID = 102342, iconID = 572025, cd = 90,  ac = 12, ch = false, roe = false, type = "DEFENSIVE" },
     { name = "Stampeding Roar",           abbr = "Roar", spellID = 77761,  iconID = 463283, cd = 120, ac = 8,  ch = false, roe = false, type = "UTILITY"   },
@@ -72,7 +72,7 @@ ShortyRCD.ClassLib = {
   },
 
   MONK = {
-    { name = "Revival",        abbr = "Revival", spellID = 115310, iconID = 1020466, cd = 180, ac = 0,  ch = false, roe = true, type = "HEALING" },
+    { name = "Revival",        abbr = "Revival", spellID = 115310, iconID = 1020466, cd = 180, ac = 0,  ch = false, roe = true, role = "Healer", type = "HEALING" },
     { name = "Life Cocoon",    abbr = "Cocoon", spellID = 116849, iconID = 627485,  cd = 120, ac = 12, ch = false, roe = true, type = "HEALING" },
     { name = "Ring of Peace",  abbr = "Ring", spellID = 116844, iconID = 839107,  cd = 120, ac = 5,  ch = false, roe = false, type = "UTILITY" },
   },

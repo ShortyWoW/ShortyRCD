@@ -16,6 +16,7 @@ end
 function Tracker:Init()
   -- state[name][spellID] = { startedAt=, cd=, ac=, iconID=, name=, type=, roe= }
   self.state = self.state or {}
+  self.capabilities = self.capabilities or {} -- sender -> set{spellID=true}
 end
 
 function Tracker:OnRemoteCast(sender, spellID)
@@ -159,4 +160,60 @@ function Tracker:GetState(sender, spellID)
   end
 
   return row
+end
+
+
+
+-- ---------- Capability tracking (what each sender can actually cast) ----------
+function Tracker:SetCapabilities(sender, spellIDs)
+  sender = ShortName(sender)
+  if not sender then return end
+  self.capabilities = self.capabilities or {}
+
+  local set = {}
+  if type(spellIDs) == "table" then
+    for _, id in ipairs(spellIDs) do
+      id = tonumber(id)
+      if id then set[id] = true end
+    end
+  end
+
+  self.capabilities[sender] = set
+
+  -- If we have active timers for spells the sender no longer reports, drop them.
+  if self.state and self.state[sender] then
+    for spellID in pairs(self.state[sender]) do
+      if not set[tonumber(spellID)] then
+        self.state[sender][spellID] = nil
+      end
+    end
+    if next(self.state[sender]) == nil then
+      self.state[sender] = nil
+    end
+  end
+
+  -- Let UI rebuild roster immediately.
+  if ShortyRCD.UI and ShortyRCD.UI.RefreshRoster then
+    ShortyRCD.UI:RefreshRoster()
+  end
+end
+
+function Tracker:OnRemoteCapabilities(sender, spellIDs)
+  self:SetCapabilities(sender, spellIDs)
+end
+
+function Tracker:HasAnyCapabilities(sender)
+  sender = ShortName(sender)
+  if not sender or not self.capabilities then return false end
+  local set = self.capabilities[sender]
+  return type(set) == "table" and next(set) ~= nil
+end
+
+function Tracker:HasCapability(sender, spellID)
+  sender = ShortName(sender)
+  spellID = tonumber(spellID)
+  if not sender or not spellID or not self.capabilities then return false end
+  local set = self.capabilities[sender]
+  if type(set) ~= "table" then return false end
+  return set[spellID] == true
 end
