@@ -50,9 +50,23 @@ function Comms:Send(msg)
 end
 
 
-function Comms:BroadcastCast(spellID)
+function Comms:BroadcastCast(spellID, cdSeconds)
   if type(spellID) ~= "number" then return end
-  self:Send("C|" .. tostring(spellID))
+
+  -- Optional CD override (talents, reductions). Send ms as integer.
+  local cdMs = nil
+  cdSeconds = tonumber(cdSeconds)
+  if cdSeconds and cdSeconds > 0 then
+    cdMs = math.floor(cdSeconds * 1000 + 0.5)
+    -- Don't send nonsense / GCD-ish values.
+    if cdMs <= 1600 then cdMs = nil end
+  end
+
+  if cdMs then
+    self:Send("C|" .. tostring(spellID) .. "|" .. tostring(cdMs))
+  else
+    self:Send("C|" .. tostring(spellID))
+  end
 end
 
 
@@ -77,8 +91,17 @@ function Comms:OnAddonMessage(prefix, msg, channel, sender)
   local kind, payload = strsplit("|", msg or "", 2)
 
   if kind == "C" then
-    local spellID = tonumber(payload)
+    local spellIDStr, cdMsStr = strsplit("|", payload or "", 2)
+    local spellID = tonumber(spellIDStr)
     if not spellID then return end
+
+    local cdOverride = nil
+    if cdMsStr and cdMsStr ~= "" then
+      local ms = tonumber(cdMsStr)
+      if ms and ms > 0 then
+        cdOverride = ms / 1000
+      end
+    end
 
     local entry = ShortyRCD.GetSpellEntry and ShortyRCD:GetSpellEntry(spellID) or nil
     if not entry then
@@ -87,7 +110,7 @@ function Comms:OnAddonMessage(prefix, msg, channel, sender)
     end
 
     if ShortyRCD.Tracker and ShortyRCD.Tracker.OnRemoteCast then
-      ShortyRCD.Tracker:OnRemoteCast(sender, spellID)
+      ShortyRCD.Tracker:OnRemoteCast(sender, spellID, cdOverride)
     end
 
     ShortyRCD:Debug(("RX %s cast %s (%d)"):format(tostring(sender), entry.name or "?", spellID))

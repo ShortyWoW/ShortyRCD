@@ -19,7 +19,7 @@ function Tracker:Init()
   self.capabilities = self.capabilities or {} -- sender -> set{spellID=true}
 end
 
-function Tracker:OnRemoteCast(sender, spellID)
+function Tracker:OnRemoteCast(sender, spellID, cdOverride)
   sender = ShortName(sender)
   spellID = tonumber(spellID)
   if not sender or not spellID then return end
@@ -30,7 +30,7 @@ function Tracker:OnRemoteCast(sender, spellID)
   self.state[sender] = self.state[sender] or {}
   self.state[sender][spellID] = {
     startedAt = GetTime(),
-    cd = tonumber(entry.cd) or 0,
+    cd = (tonumber(cdOverride) or tonumber(entry.cd) or 0),
     ac = tonumber(entry.ac) or 0,
     iconID = entry.iconID,
     spellName = entry.name or ("Spell " .. tostring(spellID)),

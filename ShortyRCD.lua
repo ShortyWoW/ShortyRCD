@@ -46,6 +46,8 @@ function ShortyRCD:Debug(msg)
     self:Print("|cff999999" .. tostring(msg) .. "|r")
   end
 
+end
+
 -- ---------- Capability broadcast (my currently available spells from ClassLib) ----------
 function ShortyRCD:GetMyCapabilities()
   local spells = {}
@@ -93,7 +95,6 @@ function ShortyRCD:BroadcastMyCapabilities(reason)
   self:Debug(("TX L|%d spells (%s)"):format(#spells, tostring(reason or "?")))
 end
 
-end
 
 -- ---------- DB helpers ----------
 function ShortyRCD:InitDB()
@@ -188,6 +189,36 @@ function ShortyRCD:OnLogin()
   self:Print("Loaded v" .. self.VERSION .. ". Type /srcd")
 end
 
+
+-- ---------- Cooldown query (local, for CD override) ----------
+function ShortyRCD:GetEffectiveCooldownSeconds(spellID)
+  spellID = tonumber(spellID)
+  if not spellID then return nil end
+
+  local startTime, duration = nil, nil
+
+  -- Prefer modern API if available.
+  if C_Spell and C_Spell.GetSpellCooldown then
+    local info = C_Spell.GetSpellCooldown(spellID)
+    if info then
+      startTime = info.startTime
+      duration = info.duration
+    end
+  elseif GetSpellCooldown then
+    startTime, duration = GetSpellCooldown(spellID)
+  end
+
+  duration = tonumber(duration) or 0
+
+  -- Ignore GCD-ish durations; we only want real cooldowns.
+  if duration <= 1.6 then
+    return nil
+  end
+
+  return duration
+end
+
+
 -- ---------- Spell detection (self only) ----------
 function ShortyRCD:OnSpellcastSucceeded(unit, castGUID, spellID)
   if unit ~= "player" then return end
@@ -204,7 +235,7 @@ function ShortyRCD:OnSpellcastSucceeded(unit, castGUID, spellID)
   if not self:IsTracked(classToken, spellID) then return end
 
   if self.Comms and self.Comms.BroadcastCast then
-    self.Comms:BroadcastCast(spellID)
+    self.Comms:BroadcastCast(spellID, self:GetEffectiveCooldownSeconds(spellID))
     self:Debug(("TX C|%d (%s)"):format(spellID, entry.name or "?"))
   end
 end
@@ -224,7 +255,7 @@ function ShortyRCD:OnSpellcastChannelStart(unit, castGUID, spellID)
   if not self:IsTracked(classToken, spellID) then return end
 
   if self.Comms and self.Comms.BroadcastCast then
-    self.Comms:BroadcastCast(spellID)
+    self.Comms:BroadcastCast(spellID, self:GetEffectiveCooldownSeconds(spellID))
     self:Debug(("TX C|%d (%s) [channel]"):format(spellID, entry.name or "?"))
   end
 end
