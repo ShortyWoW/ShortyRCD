@@ -204,6 +204,7 @@ function ShortyRCD.Options:CreatePanel()
   if self.panel then return end
 
   local p = CreateFrame("Frame", "ShortyRCDOptionsPanel", UIParent)
+  local panel = p -- alias for legacy code paths
   p.name = "ShortyRCD"
 
   local title = p:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
@@ -239,6 +240,7 @@ function ShortyRCD.Options:CreatePanel()
   -- Spell name display mode: Full | Short | None
   ShortyRCDDB.ui = ShortyRCDDB.ui or {}
   if not ShortyRCDDB.ui.spellNames then ShortyRCDDB.ui.spellNames = "full" end
+  if not ShortyRCDDB.ui.grouping then ShortyRCDDB.ui.grouping = "spell" end
 
   local snLabel = p:CreateFontString(nil, "ARTWORK", "GameFontNormal")
   snLabel:SetPoint("TOPLEFT", moveBtn, "BOTTOMLEFT", 0, -14)
@@ -273,14 +275,9 @@ function ShortyRCD.Options:CreatePanel()
   shortCB:SetScript("OnClick", function() ApplySpellNameMode("short") end)
   noneCB:SetScript("OnClick", function() ApplySpellNameMode("none") end)
 
-  ApplySpellNameMode(ShortyRCDDB.ui.spellNames)
-
-
   -- Grouping mode: By Spell | By Class
-  if not ShortyRCDDB.ui.grouping then ShortyRCDDB.ui.grouping = "spell" end
-
   local grpLabel = p:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-  grpLabel:SetPoint("TOPLEFT", fullCB, "BOTTOMLEFT", 2, -18)
+  grpLabel:SetPoint("TOPLEFT", fullCB, "BOTTOMLEFT", 2, -14)
   grpLabel:SetText("Grouping:")
 
   local bySpellCB = CreateFrame("CheckButton", nil, p, "InterfaceOptionsCheckButtonTemplate")
@@ -291,23 +288,31 @@ function ShortyRCD.Options:CreatePanel()
   byClassCB.Text:SetText("By Class")
   byClassCB:SetPoint("LEFT", bySpellCB.Text, "RIGHT", 26, 0)
 
-  local function ApplyGroupingMode(mode)
+  local byMinCB = CreateFrame("CheckButton", nil, p, "InterfaceOptionsCheckButtonTemplate")
+  byMinCB.Text:SetText("Minimalist")
+  byMinCB:SetPoint("LEFT", byClassCB.Text, "RIGHT", 26, 0)
+
+  local function ApplyGrouping(mode)
     ShortyRCDDB.ui.grouping = mode
     bySpellCB:SetChecked(mode == "spell")
     byClassCB:SetChecked(mode == "class")
+    byMinCB:SetChecked(mode == "minimal")
 
-    if ShortyRCD and ShortyRCD.UI and ShortyRCD.UI.RefreshRoster then
-      ShortyRCD.UI:RefreshRoster()
-    elseif ShortyRCD and ShortyRCD.UI and ShortyRCD.UI.UpdateBoard then
+    if ShortyRCD and ShortyRCD.UI and ShortyRCD.UI.UpdateBoard then
       ShortyRCD.UI:UpdateBoard()
+    elseif ShortyRCD and ShortyRCD.UI and ShortyRCD.UI.RefreshRoster then
+      ShortyRCD.UI:RefreshRoster()
     end
   end
 
-  bySpellCB:SetScript("OnClick", function() ApplyGroupingMode("spell") end)
-  byClassCB:SetScript("OnClick", function() ApplyGroupingMode("class") end)
+  bySpellCB:SetScript("OnClick", function() ApplyGrouping("spell") end)
+  byClassCB:SetScript("OnClick", function() ApplyGrouping("class") end)
+  byMinCB:SetScript("OnClick", function() ApplyGrouping("minimal") end)
 
-  ApplyGroupingMode(ShortyRCDDB.ui.grouping)
+  -- Initialize checks
+  ApplyGrouping(ShortyRCDDB.ui.grouping or "spell")
 
+  ApplySpellNameMode(ShortyRCDDB.ui.spellNames)
 
 
   -- Tracking header
@@ -315,11 +320,9 @@ function ShortyRCD.Options:CreatePanel()
   trackingHeader:SetPoint("TOPLEFT", fullCB, "BOTTOMLEFT", 2, -18)
   trackingHeader:SetText("Tracking")
 
-  -- Re-anchor Tracking header below Grouping controls to avoid overlap.
-  if bySpellCB and trackingHeader then
-    trackingHeader:ClearAllPoints()
-    trackingHeader:SetPoint("TOPLEFT", bySpellCB, "BOTTOMLEFT", 2, -18)
-  end
+  -- Fix layout: ensure Tracking section starts below Grouping options (avoid overlap)
+  trackingHeader:ClearAllPoints()
+  trackingHeader:SetPoint("TOPLEFT", bySpellCB, "BOTTOMLEFT", 2, -18)
 
   -- Scroll container
   local scrollFrame = CreateFrame("ScrollFrame", nil, p, "UIPanelScrollFrameTemplate")

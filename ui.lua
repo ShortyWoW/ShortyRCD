@@ -395,6 +395,10 @@ function UI:BuildDisplayLines()
     self:BuildDisplayLinesByClass()
     return
   end
+  if grouping == "minimal" and self.BuildDisplayLinesMinimal then
+    self:BuildDisplayLinesMinimal()
+    return
+  end
 
   -- Default to raid-leader optimized grouping (spell -> players).
   -- Original flat layout is kept below as fallback.
@@ -634,6 +638,56 @@ end
 
 -- Compute how many columns are needed so that each column height <= maxH.
 -- We flow line-by-line into columns (like text), repeating category headers when wrapping mid-category.
+
+function UI:BuildDisplayLinesMinimal()
+  local out = {}
+  local items = self.rosterItems or {}
+  local byCat = {}
+
+  for _, it in ipairs(items) do
+    local cat = (it.type or ""):upper()
+    if cat ~= "DEFENSIVE" and cat ~= "HEALING" and cat ~= "UTILITY" then
+      -- fall back to a sane default rather than throwing
+      cat = "UTILITY"
+    end
+    byCat[cat] = byCat[cat] or {}
+    table.insert(byCat[cat], it)
+  end
+
+  local function sortItems(a, b)
+    local aSpell = a.spellID or 0
+    local bSpell = b.spellID or 0
+    if aSpell ~= bSpell then return aSpell < bSpell end
+    local aName = a.sender or ""
+    local bName = b.sender or ""
+    return aName < bName
+  end
+
+  local catOrder = { "DEFENSIVE", "HEALING", "UTILITY" }
+  for _, cat in ipairs(catOrder) do
+    local list = byCat[cat]
+    if list and #list > 0 then
+      if #out > 0 then
+        table.insert(out, { kind = "spacerSmall" })
+      end
+      table.sort(list, sortItems)
+      for _, it in ipairs(list) do
+        table.insert(out, {
+          kind = "item",
+          item = it,
+          cat = cat,
+          indent = 0,
+          onlySender = true,
+          minimalist = true,
+        })
+      end
+    end
+  end
+
+  self.displayLines = out
+end
+
+
 function UI:ComputeFlowColumns(lines)
   local maxH = GetMaxScreenHeight()
 
