@@ -1,8 +1,8 @@
--- ui.lua
+-- interrupt_ui.lua
 ShortyRCD = ShortyRCD or {}
-ShortyRCD.UI = ShortyRCD.UI or {}
+ShortyRCD.InterruptUI = ShortyRCD.InterruptUI or {}
 
-local UI = ShortyRCD.UI
+local UI = ShortyRCD.InterruptUI
 
 local function ShortName(nameWithRealm)
   if type(nameWithRealm) ~= "string" then return nameWithRealm end
@@ -24,7 +24,6 @@ local function FormatTime(sec)
     return ("%ds"):format(sec)
   end
 end
-
 local function RGBToHex(r, g, b)
   r = math.max(0, math.min(1, tonumber(r) or 1))
   g = math.max(0, math.min(1, tonumber(g) or 1))
@@ -152,6 +151,7 @@ function UI:RefreshRoster()
           -- Capability filtering:
           -- - For myself, only show spells I currently know (spec/talents).
           -- - For others, if we have received a capabilities list, hide spells they don't report.
+          local isInterrupt = (e.type == "INTERRUPT")
           local allow = true
           if playerShort and short == playerShort then
             if IsPlayerSpell and IsPlayerSpell(e.spellID) then
@@ -165,7 +165,7 @@ function UI:RefreshRoster()
             allow = (ShortyRCD.Tracker.HasCapability and ShortyRCD.Tracker:HasCapability(short, e.spellID)) or false
           end
 
-          if allow then
+          if allow and isInterrupt then
             table.insert(self.rosterItems, {
           sender = short,
           classToken = classToken,
@@ -211,7 +211,7 @@ end
 function UI:CreateFrame()
   if self.frame then return end
 
-  local f = CreateFrame("Frame", "ShortyRCD_Frame", UIParent, "BackdropTemplate")
+  local f = CreateFrame("Frame", "ShortyRCD_InterruptFrame", UIParent, "BackdropTemplate")
   f:SetSize(360, 260)
   f:SetMovable(true)
   f:EnableMouse(true)
@@ -241,7 +241,7 @@ function UI:CreateFrame()
 
   local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
   title:SetPoint("LEFT", 10, 0)
-  title:SetText("|cffffd000ShortyRCD|r")
+  title:SetText("|cffffd000ShortyRCD - Interrupts|r")
   self.title = title
 
   
@@ -288,7 +288,7 @@ local sub = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   end)
 
   f:HookScript("OnSizeChanged", function()
-    if not (ShortyRCDDB and ShortyRCDDB.frame and ShortyRCDDB.frame.userSized) then return end
+    if not (ShortyRCDDB and ShortyRCDDB.interrupt and ShortyRCDDB.interrupt.userSized) then return end
 
     -- Mark that a relayout is needed, but debounce the expensive rebuild so resizing feels smooth.
     UI.needsLayout = true
@@ -414,7 +414,7 @@ function UI:BuildDisplayLines()
   wipe(self.displayLines)
 
   -- Display grouping: spell-first (default) or class-first (Option A: Category -> Class -> Spell -> Players)
-  local grouping = (ShortyRCDDB and ShortyRCDDB.ui and ShortyRCDDB.ui.grouping) or "spell"
+  local grouping = (ShortyRCDDB and ShortyRCDDB.interrupt and ShortyRCDDB.interrupt.grouping) or "spell"
   if grouping == "class" and self.BuildDisplayLinesByClass then
     self:BuildDisplayLinesByClass()
     return
@@ -487,7 +487,7 @@ function UI:BuildDisplayLinesGrouped()
   end
 
   local function SpellDisplayText(bundle)
-    local mode = (ShortyRCDDB and ShortyRCDDB.ui and ShortyRCDDB.ui.spellNames) or "full"
+    local mode = (ShortyRCDDB and ShortyRCDDB.interrupt and ShortyRCDDB.interrupt.spellNames) or "full"
     if mode == "short" then
       return bundle.abbr or bundle.spellName or ("Spell " .. tostring(bundle.spellID))
     elseif mode == "none" then
@@ -573,7 +573,7 @@ function UI:BuildDisplayLinesByClass()
   end
 
   local function SpellDisplayText(bundle)
-    local mode = (ShortyRCDDB and ShortyRCDDB.ui and ShortyRCDDB.ui.spellNames) or "full"
+    local mode = (ShortyRCDDB and ShortyRCDDB.interrupt and ShortyRCDDB.interrupt.spellNames) or "full"
     if mode == "short" then
       return bundle.abbr or bundle.spellName or ("Spell " .. tostring(bundle.spellID))
     elseif mode == "none" then
@@ -674,8 +674,10 @@ function UI:BuildDisplayLinesMinimal()
       -- fall back to a sane default rather than throwing
       cat = "UTILITY"
     end
-    byCat[cat] = byCat[cat] or {}
-    table.insert(byCat[cat], it)
+    if cat == "INTERRUPT" then
+      byCat[cat] = byCat[cat] or {}
+      table.insert(byCat[cat], it)
+    end
   end
 
   local function sortItems(a, b)
@@ -687,7 +689,7 @@ function UI:BuildDisplayLinesMinimal()
     return aName < bName
   end
 
-  local catOrder = { "DEFENSIVE", "HEALING", "UTILITY", "INTERRUPT" }
+  local catOrder = { "INTERRUPT" }
   for _, cat in ipairs(catOrder) do
     local list = byCat[cat]
     if list and #list > 0 then
@@ -792,7 +794,7 @@ function UI:UpdateBoard()
   local columns, usableH = self:ComputeFlowColumns(lines)
 
   local cols = #columns
-  local userSized = (ShortyRCDDB and ShortyRCDDB.frame and ShortyRCDDB.frame.userSized) == true
+  local userSized = (ShortyRCDDB and ShortyRCDDB.interrupt and ShortyRCDDB.interrupt.userSized) == true
   local frameW = self.frame:GetWidth() or 360
   local colW = COL_W
   if userSized and cols > 0 then
@@ -968,7 +970,7 @@ function UI:UpdateBoard()
         local onlySender = (d.onlySender == true)
         local bullet = (line.indent == 1) and "|cff90a4ae> |r" or ""
 
-        local mode = (ShortyRCDDB and ShortyRCDDB.ui and ShortyRCDDB.ui.spellNames) or "full"
+        local mode = (ShortyRCDDB and ShortyRCDDB.interrupt and ShortyRCDDB.interrupt.spellNames) or "full"
         local spellText = ""
         if mode == "full" then
           spellText = d.spellName or ("Spell " .. tostring(d.spellID))
@@ -1052,12 +1054,12 @@ function UI:SavePosition()
   if not self.frame then return end
   local point, relTo, relPoint, x, y = self.frame:GetPoint(1)
   local relName = (relTo and relTo.GetName and relTo:GetName()) or "UIParent"
-  ShortyRCDDB.frame.point = { point, relName, relPoint, x, y }
+  ShortyRCDDB.interrupt.point = { point, relName, relPoint, x, y }
 end
 
 function UI:RestorePosition()
   if not self.frame then return end
-  local p = ShortyRCDDB.frame.point
+  local p = ShortyRCDDB.interrupt.point
   if type(p) ~= "table" or #p < 5 then return end
   local rel = _G[p[2]] or UIParent
   self.frame:ClearAllPoints()
@@ -1066,22 +1068,22 @@ end
 
 function UI:SaveSize()
   if not self.frame then return end
-  ShortyRCDDB.frame.size = ShortyRCDDB.frame.size or {}
-  ShortyRCDDB.frame.size.w = self.frame:GetWidth()
-  ShortyRCDDB.frame.size.h = self.frame:GetHeight()
-  ShortyRCDDB.frame.userSized = true
+  ShortyRCDDB.interrupt.size = ShortyRCDDB.interrupt.size or {}
+  ShortyRCDDB.interrupt.size.w = self.frame:GetWidth()
+  ShortyRCDDB.interrupt.size.h = self.frame:GetHeight()
+  ShortyRCDDB.interrupt.userSized = true
 end
 
 function UI:RestoreSize()
   if not self.frame then return end
-  local s = ShortyRCDDB.frame.size
+  local s = ShortyRCDDB.interrupt.size
   if type(s) ~= "table" then return end
   local w = tonumber(s.w)
   local h = tonumber(s.h)
   if w and h and w > 0 and h > 0 then
     self.frame:SetSize(w, h)
     self.lastW, self.lastH = w, h
-    ShortyRCDDB.frame.userSized = true
+    ShortyRCDDB.interrupt.userSized = true
   end
 end
 
@@ -1126,5 +1128,17 @@ function UI:ApplyLockState()
     if self.title then
       self.title:SetAlpha(1.0)
     end
+  end
+end
+
+-- Interrupt window enable/disable based on options toggle
+function UI:ApplyEnabledState()
+  local enabled = (ShortyRCDDB and ShortyRCDDB.interruptTrackerEnabled) and true or false
+  if not self.frame then return end
+  if enabled then
+    self.frame:Show()
+    if self.RefreshRoster then self:RefreshRoster() end
+  else
+    self.frame:Hide()
   end
 end

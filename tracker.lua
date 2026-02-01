@@ -196,6 +196,9 @@ function Tracker:SetCapabilities(sender, spellIDs)
   if ShortyRCD.UI and ShortyRCD.UI.RefreshRoster then
     ShortyRCD.UI:RefreshRoster()
   end
+  if ShortyRCD.InterruptUI and ShortyRCD.InterruptUI.RefreshRoster then
+    ShortyRCD.InterruptUI:RefreshRoster()
+  end
 end
 
 function Tracker:OnRemoteCapabilities(sender, spellIDs)

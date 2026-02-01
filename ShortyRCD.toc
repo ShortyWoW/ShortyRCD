@@ -2,7 +2,7 @@
 ## Title: ShortyRCD
 ## Notes: Distributed raid cooldown tracker
 ## Author: ShortyWoW
-## Version: 0.1.7
+## Version: 0.1.8
 ## SavedVariables: ShortyRCDDB
 ## IconTexture: Interface\AddOns\ShortyRCD\ShortyRCD.blp
 
@@ -11,6 +11,7 @@ libs\ChatThrottleLib.lua
 class_library.lua
 tracker.lua
 comms.lua
+interrupt_ui.lua
 ui.lua
 options.lua
 ShortyRCD.lua
