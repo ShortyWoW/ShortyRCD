@@ -39,11 +39,11 @@ ShortyRCD.ClassOrder = {
 ShortyRCD.ClassLib = {
 
   DEATHKNIGHT = {
-    { name = "Anti-Magic Zone",           abbr = "AMZ", spellID = 51052,  iconID = 237510,  cd = 240, ac = 6,  ch = false, roe = true, type = "DEFENSIVE" },
+    { name = "Anti-Magic Zone", abbr = "AMZ", spellID = 51052,  iconID = 237510,  cd = 240, ac = 6,  ch = false, roe = true, type = "DEFENSIVE" },
   },
 
   DEMONHUNTER = {
-    { name = "Darkness",                  abbr = "Darkness", spellID = 196718, iconID = 1305154, cd = 300, ac = 8,  ch = false, roe = true, type = "DEFENSIVE" },
+    { name = "Darkness",         abbr = "Darkness", spellID = 196718, iconID = 1305154, cd = 300, ac = 8,  ch = false, roe = true, type = "DEFENSIVE" },
   },
 
   DRUID = {
@@ -56,11 +56,11 @@ ShortyRCD.ClassLib = {
   },
 
   EVOKER = {
-    { name = "Zephyr",                    abbr = "Zephyr", spellID = 374227, iconID = 4630449, cd = 120, ac = 8,  ch = false, roe = true, type = "UTILITY"   },
-    { name = "Rewind",                    abbr = "Rewind", spellID = 363534, iconID = 4622474, cd = 240, ac = 5,  ch = false, roe = true, type = "HEALING"   },
-    { name = "Dream Flight",              abbr = "Dream Flight", spellID = 359816, iconID = 4622455, cd = 120, ac = 15, ch = true, roe = true,  type = "HEALING"   },
-    { name = "Time Spiral",               abbr = "Time Spiral", spellID = 374968, iconID = 4622479, cd = 120, ac = 10, ch = false, roe = true, type = "UTILITY"   },
-    { name = "Time Dilation",             abbr = "Time Dilation", spellID = 357170, iconID = 4622478, cd = 60,  ac = 8,  ch = false, roe = false, type = "DEFENSIVE" },
+    { name = "Zephyr",        abbr = "Zephyr", spellID = 374227, iconID = 4630449, cd = 120, ac = 8,  ch = false, roe = true, type = "UTILITY"   },
+    { name = "Rewind",        abbr = "Rewind", spellID = 363534, iconID = 4622474, cd = 240, ac = 5,  ch = false, roe = true, type = "HEALING"   },
+    { name = "Dream Flight",  abbr = "Dream Flight", spellID = 359816, iconID = 4622455, cd = 120, ac = 15, ch = true, roe = true,  type = "HEALING"   },
+    { name = "Time Spiral",   abbr = "Time Spiral", spellID = 374968, iconID = 4622479, cd = 120, ac = 10, ch = false, roe = true, type = "UTILITY"   },
+    { name = "Time Dilation", abbr = "Time Dilation", spellID = 357170, iconID = 4622478, cd = 60,  ac = 8,  ch = false, roe = false, type = "DEFENSIVE" },
   },
 
   HUNTER = {
@@ -72,24 +72,24 @@ ShortyRCD.ClassLib = {
   },
 
   MONK = {
-    { name = "Revival",                   abbr = "Revival", spellID = 115310, iconID = 1020466, cd = 180, ac = 0,  ch = false, roe = true, role = "Healer", type = "HEALING" },
-    { name = "Life Cocoon",               abbr = "Cocoon", spellID = 116849, iconID = 627485,  cd = 120, ac = 12, ch = false, roe = true, type = "HEALING" },
-    { name = "Ring of Peace",             abbr = "Ring", spellID = 116844, iconID = 839107,  cd = 120, ac = 5,  ch = false, roe = false, type = "UTILITY" },
+    { name = "Revival",        abbr = "Revival", spellID = 115310, iconID = 1020466, cd = 180, ac = 0,  ch = false, roe = true, role = "Healer", type = "HEALING" },
+    { name = "Life Cocoon",    abbr = "Cocoon", spellID = 116849, iconID = 627485,  cd = 120, ac = 12, ch = false, roe = true, type = "HEALING" },
+    { name = "Ring of Peace",  abbr = "Ring", spellID = 116844, iconID = 839107,  cd = 120, ac = 5,  ch = false, roe = false, type = "UTILITY" },
   },
 
   PALADIN = {
-    { name = "Aura Mastery",              abbr = "Mastery", spellID = 31821, iconID = 135872, cd = 180, ac = 8,  ch = false, roe = true, type = "DEFENSIVE" },
-    { name = "Blessing of Protection",    abbr = "BoP", spellID = 1022,  iconID = 135964, cd = 300, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
-    { name = "Blessing of Sacrifice",     abbr = "Sac", spellID = 6940,  iconID = 135966, cd = 120, ac = 12, ch = false, roe = false, type = "DEFENSIVE" },
-    { name = "Blessing of Freedom",       abbr = "Freedom", spellID = 1044,  iconID = 135968, cd = 25,  ac = 8,  ch = false, roe = false, type = "UTILITY"   },
+    { name = "Aura Mastery",           abbr = "Mastery", spellID = 31821, iconID = 135872, cd = 180, ac = 8,  ch = false, roe = true, type = "DEFENSIVE" },
+    { name = "Blessing of Protection", abbr = "BoP", spellID = 1022,  iconID = 135964, cd = 300, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
+    { name = "Blessing of Sacrifice",  abbr = "Sac", spellID = 6940,  iconID = 135966, cd = 120, ac = 12, ch = false, roe = false, type = "DEFENSIVE" },
+    { name = "Blessing of Freedom",    abbr = "Freedom", spellID = 1044,  iconID = 135968, cd = 25,  ac = 8,  ch = false, roe = false, type = "UTILITY"   },
   },
 
   PRIEST = {
-    { name = "Power Infusion",            abbr = "PI", spellID = 10060, iconID = 135939, cd = 120, ac = 15, ch = false, roe = true, type = "UTILITY"   },
-    { name = "Power Word: Barrier",       abbr = "Barrier", spellID = 62618, iconID = 253400, cd = 180, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
-    { name = "Divine Hymn",               abbr = "Hymn", spellID = 64843, iconID = 237540, cd = 180, ac = 5,  ch = true, roe = true,  type = "HEALING"   },
-    { name = "Symbol of Hope",            abbr = "Hope", spellID = 64901, iconID = 135982, cd = 180, ac = 4,  ch = true, roe = true,  type = "UTILITY"   },
-    { name = "Guardian Spirit",           abbr = "GS", spellID = 47788, iconID = 237542, cd = 180, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
+    { name = "Power Infusion",       abbr = "PI", spellID = 10060, iconID = 135939, cd = 120, ac = 15, ch = false, roe = true, type = "UTILITY"   },
+    { name = "Power Word: Barrier",  abbr = "Barrier", spellID = 62618, iconID = 253400, cd = 180, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
+    { name = "Divine Hymn",          abbr = "Hymn", spellID = 64843, iconID = 237540, cd = 180, ac = 5,  ch = true, roe = true,  type = "HEALING"   },
+    { name = "Symbol of Hope",       abbr = "Hope", spellID = 64901, iconID = 135982, cd = 180, ac = 4,  ch = true, roe = true,  type = "UTILITY"   },
+    { name = "Guardian Spirit",      abbr = "GS", spellID = 47788, iconID = 237542, cd = 180, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
   },
 
   ROGUE = {
@@ -97,14 +97,14 @@ ShortyRCD.ClassLib = {
   },
 
   SHAMAN = {
-    { name = "Spirit Link Totem",         abbr = "SLT", spellID = 98008,  iconID = 237586, cd = 180, ac = 6,  ch = false, roe = true, type = "HEALING" },
-    { name = "Healing Tide Totem",        abbr = "HTT", spellID = 108280, iconID = 538569, cd = 180, ac = 10, ch = false, roe = true, type = "HEALING" },
-    { name = "Wind Rush Totem",           abbr = "Wind Rush", spellID = 192077, iconID = 538576, cd = 120, ac = 15, ch = false, roe = true, type = "UTILITY" },
-    { name = "Earthbind Totem",           abbr = "Earthbind", spellID = 2484,   iconID = 136102, cd = 30,  ac = 20, ch = false, roe = false, type = "UTILITY" },
-    { name = "Earthgrab Totem",           abbr = "Earthgrab", spellID = 51485,  iconID = 136100, cd = 30,  ac = 20, ch = false, roe = false, type = "UTILITY" },
-    { name = "Tremor Totem",              abbr = "Tremor", spellID = 8143,   iconID = 136108, cd = 60,  ac = 10, ch = false, roe = false, type = "UTILITY" },
-    { name = "Poison Cleansing Totem",    abbr = "Poison Totem", spellID = 383013, iconID = 136070, cd = 120, ac = 6,  ch = false, roe = false, type = "UTILITY" },
-    { name = "Capacitor Totem",           abbr = "Cap Totem", spellID = 192058, iconID = 136013, cd = 60,  ac = 2,  ch = false, roe = false, type = "UTILITY" },
+    { name = "Spirit Link Totem",        abbr = "SLT", spellID = 98008,  iconID = 237586, cd = 180, ac = 6,  ch = false, roe = true, type = "HEALING" },
+    { name = "Healing Tide Totem",       abbr = "HTT", spellID = 108280, iconID = 538569, cd = 180, ac = 10, ch = false, roe = true, type = "HEALING" },
+    { name = "Wind Rush Totem",          abbr = "Wind Rush", spellID = 192077, iconID = 538576, cd = 120, ac = 15, ch = false, roe = true, type = "UTILITY" },
+    { name = "Earthbind Totem",          abbr = "Earthbind", spellID = 2484,   iconID = 136102, cd = 30,  ac = 20, ch = false, roe = false, type = "UTILITY" },
+    { name = "Earthgrab Totem",          abbr = "Earthgrab", spellID = 51485,  iconID = 136100, cd = 30,  ac = 20, ch = false, roe = false, type = "UTILITY" },
+    { name = "Tremor Totem",             abbr = "Tremor", spellID = 8143,   iconID = 136108, cd = 60,  ac = 10, ch = false, roe = false, type = "UTILITY" },
+    { name = "Poison Cleansing Totem",   abbr = "Poison Totem", spellID = 383013, iconID = 136070, cd = 120, ac = 6,  ch = false, roe = false, type = "UTILITY" },
+    { name = "Capacitor Totem",          abbr = "Cap Totem", spellID = 192058, iconID = 136013, cd = 60,  ac = 2,  ch = false, roe = false, type = "UTILITY" },
   },
 
   WARLOCK = {
@@ -112,7 +112,7 @@ ShortyRCD.ClassLib = {
   },
 
   WARRIOR = {
-    { name = "Rallying Cry",              abbr = "Rally", spellID = 97462, iconID = 132351, cd = 180, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
+    { name = "Rallying Cry", abbr = "Rally", spellID = 97462, iconID = 132351, cd = 180, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
   },
 }
 

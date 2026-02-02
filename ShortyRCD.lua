@@ -3,10 +3,8 @@
 local ADDON_NAME = ...
 ShortyRCD = ShortyRCD or {}
 ShortyRCD.ADDON_NAME = ADDON_NAME
-local addonName = ...
-local version = C_AddOns.GetAddOnMetadata(addonName, "Version")
+local version = C_AddOns.GetAddOnMetadata(ShortyRCD.ADDON_NAME, "Version")
 ShortyRCD.VERSION = version or "DEV"
-
 
 ShortyRCDDB = ShortyRCDDB or nil
 
