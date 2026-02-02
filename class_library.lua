@@ -40,12 +40,10 @@ ShortyRCD.ClassLib = {
 
   DEATHKNIGHT = {
     { name = "Anti-Magic Zone",           abbr = "AMZ", spellID = 51052,  iconID = 237510,  cd = 240, ac = 6,  ch = false, roe = true, type = "DEFENSIVE" },
-    { name = "Mind Freeze",               abbr = "Kick", spellID = 47528,  iconID = 237527,  cd = 15, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
   },
 
   DEMONHUNTER = {
     { name = "Darkness",                  abbr = "Darkness", spellID = 196718, iconID = 1305154, cd = 300, ac = 8,  ch = false, roe = true, type = "DEFENSIVE" },
-    { name = "Disrupt",                   abbr = "Kick", spellID = 183752, iconID = 1305153, cd = 15, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
   },
 
   DRUID = {
@@ -55,7 +53,6 @@ ShortyRCD.ClassLib = {
     { name = "Stampeding Roar",           abbr = "Roar", spellID = 77761,  iconID = 463283, cd = 120, ac = 8,  ch = false, roe = false, type = "UTILITY"   },
     { name = "Innervate",                 abbr = "Innervate", spellID = 29166,  iconID = 136048, cd = 180, ac = 8,  ch = false, roe = true, type = "UTILITY"   },
     { name = "Ursol's Vortex",            abbr = "Ursol's", spellID = 102793, iconID = 571588, cd = 60,  ac = 10, ch = false, roe = false, type = "UTILITY"   },
-    { name = "Skull Bash",                abbr = "Kick", spellID = 106839, iconID = 236946, cd = 15, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
   },
 
   EVOKER = {
@@ -64,23 +61,20 @@ ShortyRCD.ClassLib = {
     { name = "Dream Flight",              abbr = "Dream Flight", spellID = 359816, iconID = 4622455, cd = 120, ac = 15, ch = true, roe = true,  type = "HEALING"   },
     { name = "Time Spiral",               abbr = "Time Spiral", spellID = 374968, iconID = 4622479, cd = 120, ac = 10, ch = false, roe = true, type = "UTILITY"   },
     { name = "Time Dilation",             abbr = "Time Dilation", spellID = 357170, iconID = 4622478, cd = 60,  ac = 8,  ch = false, roe = false, type = "DEFENSIVE" },
-    { name = "Quell",                     abbr = "Kick", spellID = 351338, iconID = 4622469, cd = 15, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
   },
 
   HUNTER = {
-    { name = "Counter Shot",              abbr = "Kick", spellID = 147362, iconID = 249170, cd = 24, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
-    { name = "Muzzle",                    abbr = "Kick", spellID = 187707, iconID = 1376045, cd = 15, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
+    -- No raid CDs in your current Midnight list (keep empty on purpose)
   },
 
   MAGE = {
-    { name = "Counterspell",              abbr = "Kick", spellID = 2139, iconID = 135856, cd = 25, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
+    -- No raid CDs in your current Midnight list (keep empty on purpose)
   },
 
   MONK = {
     { name = "Revival",                   abbr = "Revival", spellID = 115310, iconID = 1020466, cd = 180, ac = 0,  ch = false, roe = true, role = "Healer", type = "HEALING" },
     { name = "Life Cocoon",               abbr = "Cocoon", spellID = 116849, iconID = 627485,  cd = 120, ac = 12, ch = false, roe = true, type = "HEALING" },
     { name = "Ring of Peace",             abbr = "Ring", spellID = 116844, iconID = 839107,  cd = 120, ac = 5,  ch = false, roe = false, type = "UTILITY" },
-    { name = "Spear Hand Strike",         abbr = "Kick", spellID = 116705, iconID = 608940, cd = 15, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
   },
 
   PALADIN = {
@@ -88,7 +82,6 @@ ShortyRCD.ClassLib = {
     { name = "Blessing of Protection",    abbr = "BoP", spellID = 1022,  iconID = 135964, cd = 300, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
     { name = "Blessing of Sacrifice",     abbr = "Sac", spellID = 6940,  iconID = 135966, cd = 120, ac = 12, ch = false, roe = false, type = "DEFENSIVE" },
     { name = "Blessing of Freedom",       abbr = "Freedom", spellID = 1044,  iconID = 135968, cd = 25,  ac = 8,  ch = false, roe = false, type = "UTILITY"   },
-    { name = "Rebuke",                    abbr = "Kick", spellID = 96231, iconID = 523893, cd = 15, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
   },
 
   PRIEST = {
@@ -97,11 +90,10 @@ ShortyRCD.ClassLib = {
     { name = "Divine Hymn",               abbr = "Hymn", spellID = 64843, iconID = 237540, cd = 180, ac = 5,  ch = true, roe = true,  type = "HEALING"   },
     { name = "Symbol of Hope",            abbr = "Hope", spellID = 64901, iconID = 135982, cd = 180, ac = 4,  ch = true, roe = true,  type = "UTILITY"   },
     { name = "Guardian Spirit",           abbr = "GS", spellID = 47788, iconID = 237542, cd = 180, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
-    { name = "Silence",                   abbr = "Kick", spellID = 15487, iconID = 458230, cd = 30, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
   },
 
   ROGUE = {
-    { name = "Kick",                      abbr = "Kick", spellID = 1766, iconID = 132219, cd = 15, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
+    -- No raid CDs in your current Midnight list (keep empty on purpose)
   },
 
   SHAMAN = {
@@ -113,7 +105,6 @@ ShortyRCD.ClassLib = {
     { name = "Tremor Totem",              abbr = "Tremor", spellID = 8143,   iconID = 136108, cd = 60,  ac = 10, ch = false, roe = false, type = "UTILITY" },
     { name = "Poison Cleansing Totem",    abbr = "Poison Totem", spellID = 383013, iconID = 136070, cd = 120, ac = 6,  ch = false, roe = false, type = "UTILITY" },
     { name = "Capacitor Totem",           abbr = "Cap Totem", spellID = 192058, iconID = 136013, cd = 60,  ac = 2,  ch = false, roe = false, type = "UTILITY" },
-    { name = "Wind Shear",                abbr = "Kick", spellID = 57994, iconID = 136018, cd = 12, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
   },
 
   WARLOCK = {
@@ -122,7 +113,6 @@ ShortyRCD.ClassLib = {
 
   WARRIOR = {
     { name = "Rallying Cry",              abbr = "Rally", spellID = 97462, iconID = 132351, cd = 180, ac = 10, ch = false, roe = true, type = "DEFENSIVE" },
-    { name = "Pummel",                    abbr = "Kick", spellID = 6552, iconID = 132938, cd = 15, ac = 0,  ch = false, roe = false, type = "INTERRUPT" },
   },
 }
 

@@ -13,11 +13,6 @@ ShortyRCDDB = ShortyRCDDB or nil
 ShortyRCD.DEFAULTS = {
   debug = false,
   locked = false,
-  interruptTrackerEnabled = false,
-  interrupt = {
-    point = { "CENTER", "UIParent", "CENTER", 420, 0 },
-    grouping = "minimal",
-  },
   frame = {
     point = { "CENTER", "UIParent", "CENTER", 0, 0 },
   },
@@ -173,22 +168,6 @@ local function SlashHandler(msg)
     return
   end
 
-
-  if msg == "lock" then
-    -- Toggle movement lock for ALL windows (main + interrupt).
-    ShortyRCDDB.locked = not (ShortyRCDDB and ShortyRCDDB.locked == true)
-    local locked = ShortyRCDDB.locked == true
-
-    if ShortyRCD.UI and ShortyRCD.UI.ApplyLockState then
-      ShortyRCD.UI:ApplyLockState()
-    end
-    if ShortyRCD.InterruptUI and ShortyRCD.InterruptUI.ApplyLockState then
-      ShortyRCD.InterruptUI:ApplyLockState()
-    end
-
-    ShortyRCD:Print("Locked: " .. tostring(locked))
-    return
-  end
   -- Dev helper: simulate receiving a cast from addon comms.
   -- Usage: /srcd inject <spellID>
   local cmd, rest = strsplit(" ", msg, 2)
@@ -217,7 +196,6 @@ function ShortyRCD:OnLogin()
   if self.Tracker and self.Tracker.Init then self.Tracker:Init() end
   if self.Comms and self.Comms.Init then self.Comms:Init() end
   if self.UI and self.UI.Init then self.UI:Init() end
-  if self.InterruptUI and self.InterruptUI.Init then self.InterruptUI:Init() end
   if self.Options and self.Options.Init then self.Options:Init() end
 
   -- Slash command

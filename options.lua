@@ -56,7 +56,6 @@ local function PrettyType(t)
   if t == "DEFENSIVE" then return "Defensive" end
   if t == "HEALING"   then return "Healing" end
   if t == "UTILITY"   then return "Utility" end
-  if t == "INTERRUPT" then return "Kicks" end
   return "Other"
 end
 
@@ -66,7 +65,6 @@ local function TypeColorCode(t)
   if t == "HEALING" then   return "FF7BD88F" end -- soft green
   if t == "UTILITY" then   return "FF7FB7FF" end -- soft blue
   if t == "DEFENSIVE" then return "FFFFD36A" end -- soft gold
-  if t == "INTERRUPT" then return "FFFF7F7F" end -- soft red
   return "FFCCCCCC"
 end
 
@@ -228,20 +226,7 @@ function ShortyRCD.Options:CreatePanel()
     if ShortyRCD.UI then ShortyRCD.UI:ApplyLockState() end
   end)
 
-  
-  local interruptCB = CreateFrame("CheckButton", nil, p, "InterfaceOptionsCheckButtonTemplate")
-  interruptCB.Text:SetText("Interrupt Tracker")
-  interruptCB:SetPoint("TOPLEFT", lockCB, "BOTTOMLEFT", 0, -8)
-  interruptCB:SetChecked(ShortyRCDDB.interruptTrackerEnabled)
-
-  interruptCB:SetScript("OnClick", function(self)
-    ShortyRCDDB.interruptTrackerEnabled = self:GetChecked()
-    if ShortyRCD.InterruptUI and ShortyRCD.InterruptUI.ApplyEnabledState then
-      ShortyRCD.InterruptUI:ApplyEnabledState()
-    end
-  end)
-
-local moveBtn = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
+  local moveBtn = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
   moveBtn:SetSize(120, 22)
   moveBtn:SetPoint("LEFT", lockCB.Text, "RIGHT", 14, 0)
   moveBtn:SetText("Move Frame")

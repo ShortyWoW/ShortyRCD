@@ -670,7 +670,7 @@ function UI:BuildDisplayLinesMinimal()
 
   for _, it in ipairs(items) do
     local cat = (it.type or ""):upper()
-    if cat ~= "DEFENSIVE" and cat ~= "HEALING" and cat ~= "UTILITY" and cat ~= "INTERRUPT" then
+    if cat ~= "DEFENSIVE" and cat ~= "HEALING" and cat ~= "UTILITY" then
       -- fall back to a sane default rather than throwing
       cat = "UTILITY"
     end
@@ -687,7 +687,7 @@ function UI:BuildDisplayLinesMinimal()
     return aName < bName
   end
 
-  local catOrder = { "DEFENSIVE", "HEALING", "UTILITY", "INTERRUPT" }
+  local catOrder = { "DEFENSIVE", "HEALING", "UTILITY" }
   for _, cat in ipairs(catOrder) do
     local list = byCat[cat]
     if list and #list > 0 then
